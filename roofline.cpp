@@ -43,7 +43,6 @@ int main(int argc, char **argv)
     using arch_size_t = std::unordered_map<std::string, arch_size_specs>;
     arch_size_t arch_sizes;
     //                                     L1         L2               MALL              LDS        #CUs
-    arch_sizes["gfx908"] = arch_size_specs{16 * 1024, 8 * 1024 * 1024, 0, /*          */ 64 * 1024, 120}; // MI100
     arch_sizes["gfx90a"] = arch_size_specs{16 * 1024, 8 * 1024 * 1024, 0, /*          */ 64 * 1024, 104}; // MI200 per die
     arch_sizes["gfx940"] = arch_size_specs{32 * 1024, 4 * 1024 * 1024, 64 * 1024 * 1024, 64 * 1024, 228}; // MI300A
     arch_sizes["gfx941"] = arch_size_specs{32 * 1024, 4 * 1024 * 1024, 64 * 1024 * 1024, 64 * 1024, 304}; // MI300X A0
@@ -53,14 +52,12 @@ int main(int argc, char **argv)
     using cache_bw_kernel_selector_t = std::unordered_map<std::string, cache_bw_kernel_t *>;
 
     cache_bw_kernel_selector_t L1_bw_kernel_selector;
-    L1_bw_kernel_selector["gfx908"] = Cache_bw<float, 16 * 1024, 256>;
     L1_bw_kernel_selector["gfx90a"] = Cache_bw<float, 16 * 1024, 256>;
     L1_bw_kernel_selector["gfx940"] = Cache_bw<float, 32 * 1024, 256>;
     L1_bw_kernel_selector["gfx941"] = Cache_bw<float, 32 * 1024, 256>;
     L1_bw_kernel_selector["gfx942"] = Cache_bw<float, 32 * 1024, 256>;
 
     cache_bw_kernel_selector_t L2_bw_kernel_selector;
-    L2_bw_kernel_selector["gfx908"] = Cache_bw<float, 8 * 1024 * 1024, 256>;
     L2_bw_kernel_selector["gfx90a"] = Cache_bw<float, 8 * 1024 * 1024, 256>;
     L2_bw_kernel_selector["gfx940"] = Cache_bw<float, 4 * 1024 * 1024, 256>;
     L2_bw_kernel_selector["gfx941"] = Cache_bw<float, 4 * 1024 * 1024, 256>;
@@ -176,7 +173,7 @@ int main(int argc, char **argv)
     HIP_ASSERT(hipGetDeviceCount(&numGpuDevices));
 
     using archs_t = std::unordered_set<std::string>;
-    archs_t supported_archs{"gfx908", "gfx90a", "gfx940", "gfx941", "gfx942"};
+    archs_t supported_archs{"gfx90a", "gfx940", "gfx941", "gfx942"};
 
     if ((devID >= 0) && (devID < numGpuDevices))
     {
@@ -210,6 +207,7 @@ int main(int argc, char **argv)
     ofile << "device,HBMBw,HBMBwLow,hbmBwHigh,MALLBw,MALLBwLow,MALLBwHigh,";
     ofile << "L2Bw,L2BwLow,L2BwHigh,L1Bw,L1BwLow,L1BwHigh,LDSBw,LDSBwLow,LDSBwHigh,";
     ofile << "FP32Flops,FP32FlopsLow,FP32FlopsHigh,FP64Flops,FP64FlopsLow,FP64FlopsHigh,";
+    ofile << "MFMAF8Flops,MFMAF8FlopsLow,MFMAF8FlopsHigh,";
     ofile << "MFMABF16Flops,MFMABF16FlopsLow,MFMABF16FlopsHigh,";
     ofile << "MFMAF16Flops,MFMAF16FlopsLow,MFMAF16FlopsHigh,";
     ofile << "MFMAF32Flops,MFMAF32FlopsLow,MFMAF32FlopsHigh,";
@@ -306,7 +304,7 @@ int main(int argc, char **argv)
         numExperiments = DEFAULT_NUM_EXPERIMENTS;
         currBenchmark++;
         int cacheSize = arch_sizes[gcnArch].MALL_size;
-        archs_t mall_unsupported{"gfx908", "gfx90a"};
+        archs_t mall_unsupported{"gfx90a"};
         if (mall_unsupported.contains(gcnArch))
         {
             totalBytes = 0;
@@ -645,11 +643,11 @@ int main(int argc, char **argv)
         numWorkgroups = 128 * arch_sizes[gcnArch].CUs;
         numIters = 2000;
 
-        /* MFMA-BF16 */
+        /* MFMA-F8 */
         numExperiments = DEFAULT_NUM_EXPERIMENTS;
         currBenchmark++;
-        archs_t mfma_bf16_unsupported{"gfx940", "gfx941", "gfx942"};
-        if (mfma_bf16_unsupported.contains(gcnArch))
+        archs_t mfma_f8_unsupported{"gfx90a"};
+        if (mfma_f8_unsupported.contains(gcnArch))
         {
             totalFlops = 0;
             samples[0] = 0;
@@ -662,12 +660,12 @@ int main(int argc, char **argv)
         }
         else
         {
-            totalFlops = (uint64_t)numWorkgroups * SIMDS_PER_CU * numIters * MFMA_BF16_OPS;
+            totalFlops = (uint64_t)numWorkgroups * SIMDS_PER_CU * numIters * MFMA_F8_OPS;
             for (int n = 0; n < numExperiments; n++)
             {
 
                 initHipEvents(start, stop);
-                hipLaunchKernelGGL(mfma_bf16, dim3(numWorkgroups), dim3(workgroupSize), 0, 0, numIters, dummy);
+                hipLaunchKernelGGL(mfma_f8, dim3(numWorkgroups), dim3(workgroupSize), 0, 0, numIters, dummy);
                 stopHipEvents(eventMs, start, stop);
 
                 samples[n] = totalFlops / eventMs / 1e6;
@@ -677,6 +675,44 @@ int main(int argc, char **argv)
                 }
             }
         }
+
+        stats(samples, numExperiments, &mean, &stdev, &confidence);
+
+        perf_metrics.push_back(mean);
+        perf_metrics.push_back(mean - confidence);
+        perf_metrics.push_back(mean + confidence);
+
+        if (quiet)
+        {
+
+            statsMap[dev]["Peak MFMA FLOPs (F8)"]["mean"] = mean;
+            statsMap[dev]["Peak MFMA FLOPs (F8)"]["stdev"] = stdev;
+            showProgress(((float)dev + currBenchmark / numBenchmarks) / numGpuDevices);
+        }
+        else
+        {
+            printf("\nPeak MFMA FLOPs (F8), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, FLOP:%lu, duration:%.1f ms, mean:%.1f GFLOPS, stdev=%.1f GFLOPS\n",
+                   dev, workgroupSize, numWorkgroups, numExperiments, totalFlops, eventMs, mean, stdev);
+        }
+
+        /* MFMA-BF16 */
+        numExperiments = DEFAULT_NUM_EXPERIMENTS;
+        currBenchmark++;
+        totalFlops = (uint64_t)numWorkgroups * SIMDS_PER_CU * numIters * MFMA_BF16_OPS;
+        for (int n = 0; n < numExperiments; n++)
+        {
+
+            initHipEvents(start, stop);
+            hipLaunchKernelGGL(mfma_bf16, dim3(numWorkgroups), dim3(workgroupSize), 0, 0, numIters, dummy);
+            stopHipEvents(eventMs, start, stop);
+
+            samples[n] = totalFlops / eventMs / 1e6;
+            if (!quiet)
+            {
+                showProgress((float)n / numExperiments);
+            }
+        }
+
         stats(samples, numExperiments, &mean, &stdev, &confidence);
 
         perf_metrics.push_back(mean);
@@ -773,33 +809,18 @@ int main(int argc, char **argv)
         /* MFMA-F64 */
         numExperiments = DEFAULT_NUM_EXPERIMENTS;
         currBenchmark++;
-        archs_t mfma_f64_unsupported{"gfx908"};
-        if (mfma_f64_unsupported.contains(gcnArch))
+        totalFlops = (uint64_t)numWorkgroups * SIMDS_PER_CU * numIters * MFMA_F64_OPS;
+        for (int n = 0; n < numExperiments; n++)
         {
-            totalFlops = 0;
-            samples[0] = 0;
-            numExperiments = 1;
-            eventMs = 0;
+
+            initHipEvents(start, stop);
+            hipLaunchKernelGGL(mfma_f64, dim3(numWorkgroups), dim3(workgroupSize), 0, 0, numIters, dummy);
+            stopHipEvents(eventMs, start, stop);
+
+            samples[n] = totalFlops / eventMs / 1e6;
             if (!quiet)
             {
-                showProgress(1);
-            }
-        }
-        else
-        {
-            totalFlops = (uint64_t)numWorkgroups * SIMDS_PER_CU * numIters * MFMA_F64_OPS;
-            for (int n = 0; n < numExperiments; n++)
-            {
-
-                initHipEvents(start, stop);
-                hipLaunchKernelGGL(mfma_f64, dim3(numWorkgroups), dim3(workgroupSize), 0, 0, numIters, dummy);
-                stopHipEvents(eventMs, start, stop);
-
-                samples[n] = totalFlops / eventMs / 1e6;
-                if (!quiet)
-                {
-                    showProgress((float)n / numExperiments);
-                }
+                showProgress((float)n / numExperiments);
             }
         }
 
@@ -825,7 +846,7 @@ int main(int argc, char **argv)
         /* MFMA-I8 */
         numExperiments = DEFAULT_NUM_EXPERIMENTS;
         currBenchmark++;
-        archs_t mfma_i8_unsupported{"gfx940", "gfx941", "gfx942"};
+        archs_t mfma_i8_unsupported{"gfx90a"};
         if (mfma_i8_unsupported.contains(gcnArch))
         {
             totalFlops = 0;
@@ -891,6 +912,7 @@ int main(int argc, char **argv)
         printf("|LDS BW%-13s", " ");
         printf("|FP32%-15s", " ");
         printf("|FP64%-15s", " ");
+        printf("|F8%-18s", " ");
         printf("|BF16%-16s", " ");
         printf("|F16%-17s", " ");
         printf("|F32%-16s", " ");

@@ -54,6 +54,7 @@ __global__ void LDS_bw(int numIter, float *dummy)
 
 using int32_16vec = __attribute__((__vector_size__(16 * sizeof(int)))) int;
 using bf16_2vec = __attribute__((__vector_size__(1 * sizeof(__2i16))))  short;
+using bf16_4vec = __attribute__((__vector_size__(2 * sizeof(__2i16))))  short;
 using f32_16vec = __attribute__((__vector_size__(16 * sizeof(float)))) float;
 using f16_2vec = __attribute__((__vector_size__(2 * sizeof(__2f16))))  float;
 using f64_4vec = __attribute__((__vector_size__(4 * sizeof(double)))) double;
@@ -61,14 +62,47 @@ using f64_4vec = __attribute__((__vector_size__(4 * sizeof(double)))) double;
 
 __global__ void mfma_i8(int iter, float *dummy)
 {
-#if not defined(__gfx940__) and not defined(__gfx941__) and not defined(__gfx942__)
-    int a = threadIdx.x;
-
     int32_16vec result = {0};
 
+// CDNA2
+#if defined(__gfx90a__)
+    int a = threadIdx.x;
+
+    // mfma_i32_32x32x8i8 ops: 32x32x8x2 = 16384
     for(int i = 0; i < iter; ++i)
     {
         result = __builtin_amdgcn_mfma_i32_32x32x8i8(a, a, result, 0, 0, 0);
+    }
+// CDNA3
+#else
+    double a =  threadIdx.x;
+
+    // mfma_i32_32x32x16_i8 ops: 32x32x16x2 = 32768
+    for(int i = 0; i < iter; ++i)
+    {
+        result = __builtin_amdgcn_mfma_i32_32x32x16_i8(a, a, result, 0, 0, 0);
+    }
+#endif
+
+    if (result[0] != 2*result[0])
+    {
+        dummy[0] = result[0];
+    }
+}
+
+
+__global__ void mfma_f8(int iter, float *dummy)
+{
+// CDNA3 only
+#if not defined(__gfx90a__)
+    double a =  threadIdx.x;
+
+    f32_16vec result = {0};
+
+    // mfma_f32_32x32x16f8f8 ops: 32x32x16x2 = 32768
+    for(int i = 0; i < iter; ++i)
+    {
+        result = __builtin_amdgcn_mfma_f32_32x32x16_fp8_fp8(a, a, result, 0, 0, 0);
     }
 
     if (result[0] != 2*result[0])
@@ -81,23 +115,35 @@ __global__ void mfma_i8(int iter, float *dummy)
 
 __global__ void mfma_bf16(int iter, float *dummy)
 {
-#if not defined(__gfx940__) and not defined(__gfx941__) and not defined(__gfx942__)
+    f32_16vec result = {0};
+
+// CDNA2
+#if defined(__gfx90a__)
     bf16_2vec a;
 
     a[1] = a[0]= threadIdx.x;
 
-    f32_16vec result = {0};
-
+    //mfma_f32_32x32x4bf16 ops: 32x32x4x2 = 8192
     for(int i = 0; i < iter; ++i)
     {
         result = __builtin_amdgcn_mfma_f32_32x32x4bf16(a, a, result, 0, 0, 0);
     }
+#else
+    bf16_4vec a;
+
+    a[3] = a[2] = a[1] = a[0]= threadIdx.x;
+
+    //32x32x8bf16 ops: 32x32x8x2 = 16384
+    for(int i = 0; i < iter; ++i)
+    {
+        result = __builtin_amdgcn_mfma_f32_32x32x8bf16_1k(a, a, result, 0, 0, 0);
+    }
+#endif
 
     if (result[0] != 2*result[0])
     {
         dummy[0] = result[0];
     }
-#endif
 }
 
 
@@ -119,7 +165,6 @@ __global__ void mfma_f16(int iter, float *dummy)
     {
         dummy[0] = result[0];
     }
-
 }
 
 
@@ -144,7 +189,6 @@ __global__ void mfma_f32(int iter, float *dummy)
 
 __global__ void mfma_f64(int iter, float *dummy)
 {
-#if not defined(__gfx908__)
     double a =  threadIdx.x;
     f64_4vec result = {0};
 
@@ -158,5 +202,4 @@ __global__ void mfma_f64(int iter, float *dummy)
     {
         dummy[0] = result[0];
     }
-#endif
 }
