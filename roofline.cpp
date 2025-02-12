@@ -212,13 +212,17 @@ int main(int argc, char **argv)
     ofile.open(csvFile);
     ofile << "device,HBMBw,HBMBwLow,hbmBwHigh,MALLBw,MALLBwLow,MALLBwHigh,";
     ofile << "L2Bw,L2BwLow,L2BwHigh,L1Bw,L1BwLow,L1BwHigh,LDSBw,LDSBwLow,LDSBwHigh,";
+    ofile << "FP8Flops,FP8FlopsLow,FP8FlopsHigh,BF8Flops,BF8FlopsLow,BF8FlopsHigh,";
     ofile << "FP32Flops,FP32FlopsLow,FP32FlopsHigh,FP64Flops,FP64FlopsLow,FP64FlopsHigh,";
+    ofile << "I8Ops,I8OpsLow,I8OpsHigh,";
+    ofile << "I32Ops,I32OpsLow,I32OpsHigh,";
+    ofile << "I64Ops,I64OpsLow,I64OpsHigh,";
     ofile << "MFMAF8Flops,MFMAF8FlopsLow,MFMAF8FlopsHigh,";
-    ofile << "MFMABF16Flops,MFMABF16FlopsLow,MFMABF16FlopsHigh,";
     ofile << "MFMAF16Flops,MFMAF16FlopsLow,MFMAF16FlopsHigh,";
+    ofile << "MFMABF16Flops,MFMABF16FlopsLow,MFMABF16FlopsHigh,";
     ofile << "MFMAF32Flops,MFMAF32FlopsLow,MFMAF32FlopsHigh,";
     ofile << "MFMAF64Flops,MFMAF64FlopsLow,MFMAF64FlopsHigh,";
-    ofile << "MFMAI8Ops,MFMAFI8OpsLow,MFMAI8OpsHigh\n";
+    ofile << "MFMAI8Ops,MFMAI8OpsLow,MFMAI8OpsHigh\n";
 
     for (int dev = 0; dev < numGpuDevices; dev++)
     {
@@ -940,43 +944,6 @@ int main(int argc, char **argv)
                    dev, workgroupSize, numWorkgroups, numExperiments, totalFlops, eventMs, mean, stdev);
         }
 
-        /* MFMA-BF16 */
-        numExperiments = DEFAULT_NUM_EXPERIMENTS;
-        currBenchmark++;
-        totalFlops = (uint64_t)numWorkgroups * SIMDS_PER_CU * numIters * MFMA_BF16_OPS;
-        for (int n = 0; n < numExperiments; n++)
-        {
-
-            initHipEvents(start, stop);
-            hipLaunchKernelGGL(mfma_bf16, dim3(numWorkgroups), dim3(workgroupSize), 0, 0, numIters, dummy);
-            stopHipEvents(eventMs, start, stop);
-
-            samples[n] = totalFlops / eventMs / 1e6;
-            if (!quiet)
-            {
-                showProgress((float)n / numExperiments);
-            }
-        }
-
-        stats(samples, numExperiments, &mean, &stdev, &confidence);
-
-        perf_metrics.push_back(mean);
-        perf_metrics.push_back(mean - confidence);
-        perf_metrics.push_back(mean + confidence);
-
-        if (quiet)
-        {
-
-            statsMap[dev]["Peak MFMA FLOPs (BF16)"]["mean"] = mean;
-            statsMap[dev]["Peak MFMA FLOPs (BF16)"]["stdev"] = stdev;
-            showProgress(((float)dev + currBenchmark / numBenchmarks) / numGpuDevices);
-        }
-        else
-        {
-            printf("\nPeak MFMA FLOPs (BF16), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, FLOP:%lu, duration:%.1f ms, mean:%.1f GFLOPS, stdev=%.1f GFLOPS\n",
-                   dev, workgroupSize, numWorkgroups, numExperiments, totalFlops, eventMs, mean, stdev);
-        }
-
         /* MFMA-F16 */
         numExperiments = DEFAULT_NUM_EXPERIMENTS;
         totalFlops = (uint64_t)numWorkgroups * SIMDS_PER_CU * numIters * MFMA_F16_OPS;
@@ -1012,6 +979,43 @@ int main(int argc, char **argv)
         {
             printf("\nPeak MFMA FLOPs (F16), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, FLOP:%lu, duration:%.1f ms, mean:%.1f GFLOPS, stdev=%.1f GFLOPS\n",
                    dev, workgroupSize, numWorkgroups, numExperiments, totalFlops, eventMs, mean, stdev);
+        }
+
+        /* MFMA-BF16 */
+        numExperiments = DEFAULT_NUM_EXPERIMENTS;
+        currBenchmark++;
+        totalFlops = (uint64_t)numWorkgroups * SIMDS_PER_CU * numIters * MFMA_BF16_OPS;
+        for (int n = 0; n < numExperiments; n++)
+        {
+
+            initHipEvents(start, stop);
+            hipLaunchKernelGGL(mfma_bf16, dim3(numWorkgroups), dim3(workgroupSize), 0, 0, numIters, dummy);
+            stopHipEvents(eventMs, start, stop);
+
+            samples[n] = totalFlops / eventMs / 1e6;
+            if (!quiet)
+            {
+                showProgress((float)n / numExperiments);
+            }
+        }
+
+        stats(samples, numExperiments, &mean, &stdev, &confidence);
+
+        perf_metrics.push_back(mean);
+        perf_metrics.push_back(mean - confidence);
+        perf_metrics.push_back(mean + confidence);
+
+        if (quiet)
+        {
+
+            statsMap[dev]["Peak MFMA FLOPs (BF16)"]["mean"] = mean;
+            statsMap[dev]["Peak MFMA FLOPs (BF16)"]["stdev"] = stdev;
+            showProgress(((float)dev + currBenchmark / numBenchmarks) / numGpuDevices);
+        }
+        else
+        {
+            printf("\nPeak MFMA FLOPs (BF16), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, FLOP:%lu, duration:%.1f ms, mean:%.1f GFLOPS, stdev=%.1f GFLOPS\n",
+                    dev, workgroupSize, numWorkgroups, numExperiments, totalFlops, eventMs, mean, stdev);
         }
 
         /* MFMA-F32 */
