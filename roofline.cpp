@@ -20,6 +20,12 @@ THE SOFTWARE.
 #include <hip/hip_runtime.h>
 #include <hip/hip_ext.h>
 #include <hip/hip_version.h>
+#include <hip/hip_fp8.h>
+#include <hip/hip_bfloat16.h>
+#include <hip/hip_fp16.h>
+
+#include <rocwmma/internal/types.hpp>
+
 #include <iostream>
 #include <fstream>
 #include <iomanip>
@@ -540,6 +546,7 @@ int main(int argc, char **argv)
          * Peak FLOPs benchmarking
          *
          * **********************************************/
+        int nSize;
         numExperiments = DEFAULT_NUM_EXPERIMENTS;
         HIP_ASSERT(hipMalloc(&memBlock, DEFAULT_DATASET_SIZE));
 
@@ -548,8 +555,123 @@ int main(int argc, char **argv)
 
         int numThreads = numWorkgroups * workgroupSize;
 
+        /* FP8 benchmark */
+        numExperiments = DEFAULT_NUM_EXPERIMENTS;
+        currBenchmark++;
+        archs_t f8_unsupported{"gfx90a"};
+        if (f8_unsupported.contains(gcnArch))
+        {
+            totalFlops = 0;
+            samples[0] = 0;
+            numExperiments = 1;
+            eventMs = 0;
+            if (!quiet)
+            {
+                showProgress(1);
+            }
+        }
+        else
+        {
+            nSize = DEFAULT_DATASET_SIZE / sizeof(rocwmma::float8_fnuz_t) / numThreads * numThreads;
+            hipLaunchKernelGGL((flops_benchmark<rocwmma::float8_fnuz_t, 1024>), dim3(numWorkgroups), dim3(workgroupSize), 0, 0, (rocwmma::float8_fnuz_t *)memBlock, nSize);
+            HIP_ASSERT(hipDeviceSynchronize());
+    
+            totalFlops = (uint64_t)nSize * 1024 * 2;
+
+            for (int n = 0; n < numExperiments; n++)
+            {
+
+                initHipEvents(start, stop);
+                hipLaunchKernelGGL((flops_benchmark<rocwmma::float8_fnuz_t, 1024>), dim3(numWorkgroups), dim3(workgroupSize), 0, 0, (rocwmma::float8_fnuz_t *)memBlock, nSize);
+                stopHipEvents(eventMs, start, stop);
+
+                samples[n] = (float)totalFlops / eventMs / 1e6;
+                if (!quiet)
+                {
+                    showProgress((float)n / numExperiments);
+                }
+            }
+        }
+
+        stats(samples, numExperiments, &mean, &stdev, &confidence);
+
+        perf_metrics.push_back(mean);
+        perf_metrics.push_back(mean - confidence);
+        perf_metrics.push_back(mean + confidence);
+
+        if (quiet)
+        {
+
+            statsMap[dev]["Peak FLOPs (FP8)"]["mean"] = mean;
+            statsMap[dev]["Peak FLOPs (FP8)"]["stdev"] = stdev;
+            showProgress(((float)dev + currBenchmark / numBenchmarks) / numGpuDevices);
+        }
+        else
+        {
+            printf("\nPeak FLOPs (FP8), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, FLOP:%lu, duration:%.1f ms, mean:%f.1 GFLOPS, stdev=%.1f GFLOPS\n",
+                   dev, workgroupSize, numWorkgroups, numExperiments, totalFlops, eventMs, mean, stdev);
+        }
+
+        /* BF8 benchmark */
+        numExperiments = DEFAULT_NUM_EXPERIMENTS;
+        currBenchmark++;
+        // f8_unsupported{"gfx90a"};
+        if (f8_unsupported.contains(gcnArch))
+        {
+            totalFlops = 0;
+            samples[0] = 0;
+            numExperiments = 1;
+            eventMs = 0;
+            if (!quiet)
+            {
+                showProgress(1);
+            }
+        }
+        else
+        {
+            nSize = DEFAULT_DATASET_SIZE / sizeof(rocwmma::bfloat8_fnuz_t) / numThreads * numThreads;
+            hipLaunchKernelGGL((flops_benchmark<rocwmma::bfloat8_fnuz_t, 1024>), dim3(numWorkgroups), dim3(workgroupSize), 0, 0, (rocwmma::bfloat8_fnuz_t *)memBlock, nSize);
+            HIP_ASSERT(hipDeviceSynchronize());
+    
+            totalFlops = (uint64_t)nSize * 1024 * 2;
+
+            for (int n = 0; n < numExperiments; n++)
+            {
+
+                initHipEvents(start, stop);
+                hipLaunchKernelGGL((flops_benchmark<rocwmma::bfloat8_fnuz_t, 1024>), dim3(numWorkgroups), dim3(workgroupSize), 0, 0, (rocwmma::bfloat8_fnuz_t *)memBlock, nSize);
+                stopHipEvents(eventMs, start, stop);
+
+                samples[n] = (float)totalFlops / eventMs / 1e6;
+                if (!quiet)
+                {
+                    showProgress((float)n / numExperiments);
+                }
+            }
+        }
+
+        stats(samples, numExperiments, &mean, &stdev, &confidence);
+
+        perf_metrics.push_back(mean);
+        perf_metrics.push_back(mean - confidence);
+        perf_metrics.push_back(mean + confidence);
+
+        if (quiet)
+        {
+
+            statsMap[dev]["Peak FLOPs (BF8)"]["mean"] = mean;
+            statsMap[dev]["Peak FLOPs (BF8)"]["stdev"] = stdev;
+            showProgress(((float)dev + currBenchmark / numBenchmarks) / numGpuDevices);
+        }
+        else
+        {
+            printf("\nPeak FLOPs (BF8), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, FLOP:%lu, duration:%.1f ms, mean:%f.1 GFLOPS, stdev=%.1f GFLOPS\n",
+                   dev, workgroupSize, numWorkgroups, numExperiments, totalFlops, eventMs, mean, stdev);
+        }
+
         /* FP32 benchmark */
-        int nSize = DEFAULT_DATASET_SIZE / sizeof(float) / numThreads * numThreads;
+        numExperiments = DEFAULT_NUM_EXPERIMENTS;
+        nSize = DEFAULT_DATASET_SIZE / sizeof(float) / numThreads * numThreads;
 
         hipLaunchKernelGGL((flops_benchmark<float, 1024>), dim3(numWorkgroups), dim3(workgroupSize), 0, 0, (float *)memBlock, nSize);
         HIP_ASSERT(hipDeviceSynchronize());
@@ -627,6 +749,47 @@ int main(int argc, char **argv)
         else
         {
             printf("\nPeak FLOPs (FP64), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, FLOP:%lu, duration:%.1f ms, mean:%f.1 GFLOPS, stdev=%.1f GFLOPS\n",
+                   dev, workgroupSize, numWorkgroups, numExperiments, totalFlops, eventMs, mean, stdev);
+        }
+
+        /* INT8 benchmark */
+        numExperiments = DEFAULT_NUM_EXPERIMENTS;
+        nSize = DEFAULT_DATASET_SIZE / sizeof(int8_t) / numThreads * numThreads;
+        hipLaunchKernelGGL((flops_benchmark<int8_t, 1024>), dim3(numWorkgroups), dim3(workgroupSize), 0, 0, (int8_t *)memBlock, nSize);
+        HIP_ASSERT(hipDeviceSynchronize());
+
+        totalFlops = (uint64_t)nSize * 1024 * 2;
+        currBenchmark++;
+        for (int n = 0; n < numExperiments; n++)
+        {
+
+            initHipEvents(start, stop);
+            hipLaunchKernelGGL((flops_benchmark<int8_t, 1024>), dim3(numWorkgroups), dim3(workgroupSize), 0, 0, (int8_t *)memBlock, nSize);
+            stopHipEvents(eventMs, start, stop);
+
+            samples[n] = (float)totalFlops / eventMs / 1e6;
+            if (!quiet)
+            {
+                showProgress((float)n / numExperiments);
+            }
+        }
+
+        stats(samples, numExperiments, &mean, &stdev, &confidence);
+
+        perf_metrics.push_back(mean);
+        perf_metrics.push_back(mean - confidence);
+        perf_metrics.push_back(mean + confidence);
+
+        if (quiet)
+        {
+
+            statsMap[dev]["Peak FLOPs (INT8)"]["mean"] = mean;
+            statsMap[dev]["Peak FLOPs (INT8)"]["stdev"] = stdev;
+            showProgress(((float)dev + currBenchmark / numBenchmarks) / numGpuDevices);
+        }
+        else
+        {
+            printf("\nPeak FLOPs (INT8), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, FLOP:%lu, duration:%.1f ms, mean:%f.1 GFLOPS, stdev=%.1f GFLOPS\n",
                    dev, workgroupSize, numWorkgroups, numExperiments, totalFlops, eventMs, mean, stdev);
         }
 

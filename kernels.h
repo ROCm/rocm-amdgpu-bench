@@ -91,7 +91,8 @@ __global__ void flops_benchmark(T *buf, uint32_t nSize)
     {
         for(int j=0; j<nFMA; j++)
         {
-            x = ptr[offset] * x + y;
+          //order must be 'y + ptr[offset]*x' due to inline operator implementation in rocwmma with certain datatypes
+          x = y + ptr[offset] * x;
         }
     }
 
