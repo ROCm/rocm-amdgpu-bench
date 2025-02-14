@@ -93,7 +93,7 @@ jobs:
       matrix:
         rocm-version: ['6.0']
         os-release: ['20.04']
-        compiler: ['g++-11']
+        compiler: ['g++-12']
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
@@ -154,7 +154,7 @@ jobs:
       matrix:
         rocm-version: ['6.0']
         os-release: ['15.5']
-        compiler: ['g++-11']
+        compiler: ['g++-12']
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
