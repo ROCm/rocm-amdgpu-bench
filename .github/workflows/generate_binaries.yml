@@ -5,7 +5,7 @@ name: generate_binaries
 # distro matrices defined below.
 #
 # Any pushes to 'main' in this repo will trigger this action. Once compiled,
-# binaries will be archived and pushed the ROCm/rocprofiler-compute branch listed below.
+# binaries will be archived and pushed to the ROCm/rocprofiler-compute branch listed below.
 
 on:
   push:
