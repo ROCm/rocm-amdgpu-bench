@@ -76,13 +76,13 @@ jobs:
           mkdir -p build && cd build &&
           cmake .. &&
           make -j &&
-          mv roofline/roofline roofline/roofline-rhel${{ env.OS_VERSION_MAJOR }}-mi300-rocm${{ env.ROCM_MAJOR }}
+          mv roofline roofline-rhel${{ env.OS_VERSION_MAJOR }}-mi300-rocm${{ env.ROCM_MAJOR }}
 
       - name: Cache rhel binary
         uses: actions/upload-artifact@v4
         with:
           name: rhel-binary-rocm${{ env.ROCM_MAJOR }}
-          path: build/roofline/roofline-rhel${{ env.OS_VERSION_MAJOR }}-mi300-rocm${{ env.ROCM_MAJOR }}
+          path: build/roofline-rhel${{ env.OS_VERSION_MAJOR }}-mi300-rocm${{ env.ROCM_MAJOR }}
 
   build-ubuntu:
     runs-on: ubuntu-20.04
@@ -137,13 +137,13 @@ jobs:
           mkdir -p build && cd build &&
           cmake .. &&
           make -j &&
-          mv roofline/roofline roofline/roofline-ubuntu${{ env.OS_VERSION_MAJOR }}_${{ env.OS_VERSION_MINOR }}-mi300-rocm${{ env.ROCM_MAJOR }}
+          mv roofline roofline-ubuntu${{ env.OS_VERSION_MAJOR }}_${{ env.OS_VERSION_MINOR }}-mi300-rocm${{ env.ROCM_MAJOR }}
 
       - name: Cache ubuntu binary
         uses: actions/upload-artifact@v4
         with:
           name: ubuntu-binary-rocm${{ env.ROCM_MAJOR }}
-          path: build/roofline/roofline-ubuntu${{ env.OS_VERSION_MAJOR }}_${{ env.OS_VERSION_MINOR }}-mi300-rocm${{ env.ROCM_MAJOR }}
+          path: build/roofline-ubuntu${{ env.OS_VERSION_MAJOR }}_${{ env.OS_VERSION_MINOR }}-mi300-rocm${{ env.ROCM_MAJOR }}
 
   build-sles:
     runs-on: ubuntu-20.04
@@ -180,7 +180,7 @@ jobs:
           command: |
             ROCM_VERSION=${{ matrix.rocm-version }}
             ROCM_MAJOR=$(echo '${{ matrix.rocm-version }}' | sed 's/\./ /g' | awk '{print $1}')
-            ROCM_MINOR=$(echo '${{ matrix.rocm-version }}'' | sed 's/\./ /g' | awk '{print $2}')
+            ROCM_MINOR=$(echo '${{ matrix.rocm-version }}' | sed 's/\./ /g' | awk '{print $2}')
             ROCM_VERSN=$(( ($(ROCM_MAJOR)*10000)+($(ROCM_MINOR)*100) ))
             python3 -m pip install --upgrade pip
             python3 -m pip install 'cmake==3.22'
@@ -197,13 +197,13 @@ jobs:
           mkdir -p build && cd build &&
           cmake .. &&
           make -j &&
-          mv roofline/roofline roofline/roofline-sles${{ env.OS_VERSION_MAJOR }}sp${{ env.OS_VERSION_MINOR }}-mi300-rocm${{ env.ROCM_MAJOR }}
+          mv roofline roofline-sles${{ env.OS_VERSION_MAJOR }}sp${{ env.OS_VERSION_MINOR }}-mi300-rocm${{ env.ROCM_MAJOR }}
 
       - name: Cache sles binary
         uses: actions/upload-artifact@v4
         with:
           name: sles-binary-rocm${{ env.ROCM_MAJOR }}
-          path: build/roofline/roofline-sles${{ env.OS_VERSION_MAJOR }}sp${{ env.OS_VERSION_MINOR }}-mi300-rocm${{ env.ROCM_MAJOR }}
+          path: build/roofline-sles${{ env.OS_VERSION_MAJOR }}sp${{ env.OS_VERSION_MINOR }}-mi300-rocm${{ env.ROCM_MAJOR }}
 
 
   push-to-rocprofiler-compute:
