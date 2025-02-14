@@ -185,7 +185,7 @@ jobs:
             python3 -m pip install 'cmake==3.22'
             zypper addrepo  https://download.opensuse.org/repositories/devel:languages:perl/${{ matrix.os-release }}/devel:languages:perl.repo
             zypper --non-interactive --no-gpg-checks install -y kernel-default-devel
-            zypper --non-interactive --no-gpg-checks install -y https://repo.radeon.com/amdgpu-install/${{ matrix.rocm-version }}/sle/${{ matrix.os-release }}/amdgpu-install-${{ env.ROCM_MAJOR }}.${{ env.ROCM_MINOR }}.${{ env.ROCM_VERSN }}-1.noarch.rpm
+            zypper --non-interactive --no-gpg-checks install -y https://repo.radeon.com/amdgpu-install/${{ matrix.rocm-version }}/sle/${{ matrix.os-release }}/amdgpu-install-${{ env.ROCM_MAJOR }}.${{ env.ROCM_MINOR }}.$(ROCM_VERSN)-1.noarch.rpm
             zypper --non-interactive --no-gpg-checks refresh
             zypper --non-interactive --no-gpg-checks install -y rocm-dev rocm-smi-lib rocprofiler-dev
       
