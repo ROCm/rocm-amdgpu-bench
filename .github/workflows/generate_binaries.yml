@@ -34,7 +34,7 @@ jobs:
       matrix:
         rocm-version: ['6.0']
         os-release: ['8.8']
-        compiler: ['g++-8']
+        compiler: ['g++11']
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
@@ -68,6 +68,7 @@ jobs:
             python3 -m pip install 'cmake==3.22'
             yum install -y https://repo.radeon.com/amdgpu-install/${{ matrix.rocm-version }}/rhel/${{ matrix.os-release }}/amdgpu-install-${ROCM_MAJOR}.${ROCM_MINOR}.${ROCM_VERSN}-1${RPM_TAG}.noarch.rpm
             yum install -y rocm-dev rocm-smi-lib rocprofiler-dev
+            yum install -y devtoolset-11-toolchain
 
       - name: Create roofline binary
         run:
@@ -93,7 +94,7 @@ jobs:
       matrix:
         rocm-version: ['6.0']
         os-release: ['20.04']
-        compiler: ['g++-8']
+        compiler: ['g++11']
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
@@ -154,7 +155,7 @@ jobs:
       matrix:
         rocm-version: ['6.0']
         os-release: ['15.5']
-        compiler: ['g++-8']
+        compiler: ['g++11']
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
@@ -184,7 +185,10 @@ jobs:
             python3 -m pip install --upgrade pip
             python3 -m pip install 'cmake==3.22'
             zypper addrepo  https://download.opensuse.org/repositories/devel:languages:perl/${{ matrix.os-release }}/devel:languages:perl.repo
-            zypper --non-interactive --no-gpg-checks install -y kernel-default-devel gcc8
+            zypper --non-interactive --no-gpg-checks install -y kernel-default-devel
+            zypper addrepo https://download.opensuse.org/repositories/devel:gcc/openSUSE_Factory/devel:gcc.repo
+            zypper refresh
+            zypper install gcc11
             zypper --non-interactive --no-gpg-checks install -y https://repo.radeon.com/amdgpu-install/${{ matrix.rocm-version }}/sle/${{ matrix.os-release }}/amdgpu-install-${{ env.ROCM_MAJOR }}.${{ env.ROCM_MINOR }}.60000-1.noarch.rpm
             zypper --non-interactive --no-gpg-checks refresh
             zypper --non-interactive --no-gpg-checks install -y rocm-dev rocm-smi-lib rocprofiler-dev
