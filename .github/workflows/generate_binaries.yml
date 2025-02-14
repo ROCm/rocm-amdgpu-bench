@@ -68,7 +68,7 @@ jobs:
             python3 -m pip install 'cmake==3.22'
             yum install -y https://repo.radeon.com/amdgpu-install/${{ matrix.rocm-version }}/rhel/${{ matrix.os-release }}/amdgpu-install-${ROCM_MAJOR}.${ROCM_MINOR}.${ROCM_VERSN}-1${RPM_TAG}.noarch.rpm
             yum install -y rocm-dev rocm-smi-lib rocprofiler-dev
-            yum install -y devtoolset-11-toolchain
+            yum install -y devtoolset-11-*
 
       - name: Create roofline binary
         run:
