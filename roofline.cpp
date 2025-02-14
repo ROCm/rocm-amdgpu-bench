@@ -176,7 +176,7 @@ int main(int argc, char **argv)
     HIP_ASSERT(hipGetDeviceCount(&numGpuDevices));
 
     using archs_t = std::unordered_set<std::string>;
-    archs_t supported_archs{"gfx908", "gfx90a", "gfx940", "gfx941", "gfx942"};
+    archs_t supported_archs{"gfx90a", "gfx940", "gfx941", "gfx942"};
 
     if ((devID >= 0) && (devID < numGpuDevices))
     {
