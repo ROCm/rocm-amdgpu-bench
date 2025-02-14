@@ -75,7 +75,7 @@ jobs:
           export PATH=/opt/rocm/bin:$PATH &&
           mkdir -p build && cd build &&
           cmake .. &&
-          make -j -std=c++20 &&
+          make -j &&
           mv roofline/roofline roofline/roofline-rhel${{ env.OS_VERSION_MAJOR }}-mi300-rocm${{ env.ROCM_MAJOR }}
 
       - name: Cache rhel binary
@@ -134,7 +134,7 @@ jobs:
           export PATH=/opt/rocm/bin:$PATH &&
           mkdir -p build && cd build &&
           cmake .. &&
-          make -j -std=c++20 &&
+          make -j &&
           mv roofline/roofline roofline/roofline-ubuntu${{ env.OS_VERSION_MAJOR }}_${{ env.OS_VERSION_MINOR }}-mi300-rocm${{ env.ROCM_MAJOR }}
 
       - name: Cache ubuntu binary
@@ -192,7 +192,7 @@ jobs:
           export PATH=/opt/rocm/bin:$PATH &&
           mkdir -p build && cd build &&
           cmake .. &&
-          make -j -std=c++20 &&
+          make -j &&
           mv roofline/roofline roofline/roofline-sles${{ env.OS_VERSION_MAJOR }}sp${{ env.OS_VERSION_MINOR }}-mi300-rocm${{ env.ROCM_MAJOR }}
 
       - name: Cache sles binary
