@@ -165,7 +165,7 @@ jobs:
       
       - name: Configure Env
         run:
-          echo "ROCM_VERSION=${{ matrix.rocm-version }}" >> &GITHUB_ENV &&
+          echo "ROCM_VERSION=${{ matrix.rocm-version }}" >> $GITHUB_ENV &&
           echo "ROCM_MAJOR=$(echo '${{ matrix.rocm-version }}' | sed 's/\./ /g' | awk '{print $1}')" >> $GITHUB_ENV &&
           echo "ROCM_MINOR=$(echo '${{ matrix.rocm-version }}' | sed 's/\./ /g' | awk '{print $2}')" >> $GITHUB_ENV &&
           echo "OS_VERSION_MAJOR=$(cat /etc/os-release | grep 'VERSION_ID' | sed 's/=/ /1' | awk '{print $NF}' | sed 's/"//g' | sed 's/\./ /g' | awk '{print $1}')" >> $GITHUB_ENV &&
