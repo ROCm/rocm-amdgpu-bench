@@ -31,7 +31,7 @@ machine learning/HPC workloads.
 Compilation requires a working HIP environment that is typically
 provided via a local [ROCm](https://rocm.docs.amd.com/en/latest/)
 install (e.g. via installation of the `rocm-hip-sdk` package) along
-with the `cmake` build tool.
+with the `cmake` build tool. ROCm 6.2 or later is required to build.
 
 ### Configure
 
