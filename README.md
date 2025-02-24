@@ -11,8 +11,10 @@ utility directly measures performance for a variety of micro-benchmarks includin
 * L2 Bandwidth
 * L1 Bandwidth
 * LDS Bandwidth
+* Peak FLOPs (FP8)
 * Peak FLOPs (FP32)
 * Peak FLOPs (FP64)
+* Peak MFMA FLOPs (F8)
 * Peak MFMA FLOPs (BF16)
 * Peak MFMA FLOPs (F16)
 * Peak MFMA FLOPs (F32)
@@ -20,7 +22,7 @@ utility directly measures performance for a variety of micro-benchmarks includin
 * Peak MFMA IOPs (I8)
 
 This utility is an input dependency for AMD's
-[Omniperf](https://github.com/ROCm/omniperf) performance tool for profiling
+[ROCm Compute Profiler](https://github.com/ROCm/rocprofiler-compute) performance tool for profiling
 machine learning/HPC workloads.
 
 

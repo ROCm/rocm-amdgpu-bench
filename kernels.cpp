@@ -79,6 +79,31 @@ __global__ void mfma_i8(int iter, float *dummy)
 }
 
 
+__global__ void mfma_f8(int iter, float *dummy)
+{
+// MI300 series only - note gfx940/gfx941/gfx942 uses fnuz f8
+#if defined(__gfx940__) or defined(__gfx941__) or defined(__gfx942__)
+    //Input: 2 F32 registers
+    //builtin mfma expects double input
+    double a =  threadIdx.x;
+
+    //Output: 16 F32 registers
+    f32_16vec result = {0};
+
+    // mfma_f32_32x32x16f8f8 ops: 32x32x16x2 = 32768
+    for(int i = 0; i < iter; ++i)
+    {
+        result = __builtin_amdgcn_mfma_f32_32x32x16_fp8_fp8(a, a, result, 0, 0, 0);
+    }
+
+    if (result[0] != 2*result[0])
+    {
+        dummy[0] = result[0];
+    }
+#endif
+}
+
+
 __global__ void mfma_bf16(int iter, float *dummy)
 {
 #if not defined(__gfx940__) and not defined(__gfx941__) and not defined(__gfx942__)
