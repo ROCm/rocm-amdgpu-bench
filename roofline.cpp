@@ -628,7 +628,7 @@ int main(int argc, char **argv)
         }
         else
         {
-            printf("\nPeak FLOPs (FP64), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, FLOP:%lu, duration:%.1f ms, mean:%f.1 GFLOPS, stdev=%.1f GFLOPS\n",
+            printf("\nPeak FLOPs (FP64), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, FLOP:%lu, duration:%.1f ms, mean:%.1f GFLOPS, stdev=%.1f GFLOPS\n",
                    dev, workgroupSize, numWorkgroups, numExperiments, totalFlops, eventMs, mean, stdev);
         }
 
