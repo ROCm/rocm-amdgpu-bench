@@ -16,7 +16,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container:
-       image: rocm/dev-ubuntu-22.04:6.1
+       image: rocm/dev-ubuntu-22.04:6.3
     steps:
       - name: Install baseline OS dependencies
         run: |

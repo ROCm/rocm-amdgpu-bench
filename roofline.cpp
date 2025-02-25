@@ -34,6 +34,8 @@ THE SOFTWARE.
 #include <math.h>
 #include <map>
 
+#include <hip/hip_fp8.h>
+
 #include "roofline.h"
 #include "kernels.h"
 #include "common.h"
@@ -91,7 +93,7 @@ int main(int argc, char **argv)
     int option_index = 0;
     int c;
     std::cout << "Empirical Roofline Calculation" << std::endl
-              << "Copyright © 2022  Advanced Micro Devices, Inc. All rights reserved." << std::endl;
+              << "Copyright © 2025  Advanced Micro Devices, Inc. All rights reserved." << std::endl;
 
     /* default values */
     int devID = -1;
@@ -209,7 +211,9 @@ int main(int argc, char **argv)
     ofile.open(csvFile);
     ofile << "device,HBMBw,HBMBwLow,hbmBwHigh,MALLBw,MALLBwLow,MALLBwHigh,";
     ofile << "L2Bw,L2BwLow,L2BwHigh,L1Bw,L1BwLow,L1BwHigh,LDSBw,LDSBwLow,LDSBwHigh,";
+    ofile << "FP8Flops,FP8FlopsLow,FP8FlopsHigh,";
     ofile << "FP32Flops,FP32FlopsLow,FP32FlopsHigh,FP64Flops,FP64FlopsLow,FP64FlopsHigh,";
+    ofile << "MFMAF8Flops,MFMAF8FlopsLow,MFMAF8FlopsHigh,";
     ofile << "MFMABF16Flops,MFMABF16FlopsLow,MFMABF16FlopsHigh,";
     ofile << "MFMAF16Flops,MFMAF16FlopsLow,MFMAF16FlopsHigh,";
     ofile << "MFMAF32Flops,MFMAF32FlopsLow,MFMAF32FlopsHigh,";
@@ -542,6 +546,7 @@ int main(int argc, char **argv)
          * Peak FLOPs benchmarking
          *
          * **********************************************/
+        int nSize = 0;
         numExperiments = DEFAULT_NUM_EXPERIMENTS;
         HIP_ASSERT(hipMalloc(&memBlock, DEFAULT_DATASET_SIZE));
 
@@ -550,8 +555,65 @@ int main(int argc, char **argv)
 
         int numThreads = numWorkgroups * workgroupSize;
 
+        /* FP8 benchmark */
+        numExperiments = DEFAULT_NUM_EXPERIMENTS;
+        currBenchmark++;
+        archs_t f8_unsupported{"gfx908", "gfx90a"};
+        if (f8_unsupported.contains(gcnArch))
+        {
+            totalFlops = 0;
+            samples[0] = 0;
+            numExperiments = 1;
+            eventMs = 0;
+            if (!quiet)
+            {
+                showProgress(1);
+            }
+        }
+        else
+        {
+            nSize = DEFAULT_DATASET_SIZE / sizeof(__hip_fp8_storage_t) / numThreads * numThreads;
+            hipLaunchKernelGGL((flops_benchmark<__hip_fp8_storage_t, 1024>), dim3(numWorkgroups), dim3(workgroupSize), 0, 0, (__hip_fp8_storage_t *)memBlock, nSize);
+            HIP_ASSERT(hipDeviceSynchronize());
+
+            totalFlops = (uint64_t)nSize * 1024 * 2;
+
+            for (int n = 0; n < numExperiments; n++)
+            {
+
+                initHipEvents(start, stop);
+                hipLaunchKernelGGL((flops_benchmark<__hip_fp8_storage_t, 1024>), dim3(numWorkgroups), dim3(workgroupSize), 0, 0, (__hip_fp8_storage_t *)memBlock, nSize);
+                stopHipEvents(eventMs, start, stop);
+
+                samples[n] = (float)totalFlops / eventMs / 1e6;
+                if (!quiet)
+                {
+                    showProgress((float)n / numExperiments);
+                }
+            }
+        }
+
+        stats(samples, numExperiments, &mean, &stdev, &confidence);
+
+        perf_metrics.push_back(mean);
+        perf_metrics.push_back(mean - confidence);
+        perf_metrics.push_back(mean + confidence);
+
+        if (quiet)
+        {
+
+            statsMap[dev]["Peak FLOPs (FP8)"]["mean"] = mean;
+            statsMap[dev]["Peak FLOPs (FP8)"]["stdev"] = stdev;
+            showProgress(((float)dev + currBenchmark / numBenchmarks) / numGpuDevices);
+        }
+        else
+        {
+            printf("\nPeak FLOPs (FP8), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, FLOP:%lu, duration:%.1f ms, mean:%.1f GFLOPS, stdev=%.1f GFLOPS\n",
+                   dev, workgroupSize, numWorkgroups, numExperiments, totalFlops, eventMs, mean, stdev);
+        }
+
         /* FP32 benchmark */
-        int nSize = DEFAULT_DATASET_SIZE / sizeof(float) / numThreads * numThreads;
+        nSize = DEFAULT_DATASET_SIZE / sizeof(float) / numThreads * numThreads;
 
         hipLaunchKernelGGL((flops_benchmark<float, 1024>), dim3(numWorkgroups), dim3(workgroupSize), 0, 0, (float *)memBlock, nSize);
         HIP_ASSERT(hipDeviceSynchronize());
@@ -644,6 +706,57 @@ int main(int argc, char **argv)
         // warm up first use default setting
         numWorkgroups = 128 * arch_sizes[gcnArch].CUs;
         numIters = 2000;
+
+        /* MFMA-F8 */
+        numExperiments = DEFAULT_NUM_EXPERIMENTS;
+        currBenchmark++;
+        archs_t mfma_f8_unsupported{"gfx908", "gfx90a"};
+        if (mfma_f8_unsupported.contains(gcnArch))
+        {
+            totalFlops = 0;
+            samples[0] = 0;
+            numExperiments = 1;
+            eventMs = 0;
+            if (!quiet)
+            {
+                showProgress(1);
+            }
+        }
+        else
+        {
+            totalFlops = (uint64_t)numWorkgroups * SIMDS_PER_CU * numIters * MFMA_F8_OPS;
+            for (int n = 0; n < numExperiments; n++)
+            {
+
+                initHipEvents(start, stop);
+                hipLaunchKernelGGL(mfma_f8, dim3(numWorkgroups), dim3(workgroupSize), 0, 0, numIters, dummy);
+                stopHipEvents(eventMs, start, stop);
+
+                samples[n] = totalFlops / eventMs / 1e6;
+                if (!quiet)
+                {
+                    showProgress((float)n / numExperiments);
+                }
+            }
+        }
+        stats(samples, numExperiments, &mean, &stdev, &confidence);
+
+        perf_metrics.push_back(mean);
+        perf_metrics.push_back(mean - confidence);
+        perf_metrics.push_back(mean + confidence);
+
+        if (quiet)
+        {
+
+            statsMap[dev]["Peak MFMA FLOPs (F8)"]["mean"] = mean;
+            statsMap[dev]["Peak MFMA FLOPs (F8)"]["stdev"] = stdev;
+            showProgress(((float)dev + currBenchmark / numBenchmarks) / numGpuDevices);
+        }
+        else
+        {
+            printf("\nPeak MFMA FLOPs (F8), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, FLOP:%lu, duration:%.1f ms, mean:%.1f GFLOPS, stdev=%.1f GFLOPS\n",
+                   dev, workgroupSize, numWorkgroups, numExperiments, totalFlops, eventMs, mean, stdev);
+        }
 
         /* MFMA-BF16 */
         numExperiments = DEFAULT_NUM_EXPERIMENTS;
