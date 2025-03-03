@@ -32,7 +32,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rocm-version: ['6.0']
+        rocm-version: ['6.3']
         os-release: ['8.8']
         compiler: ['g++11']
     steps:
@@ -92,7 +92,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rocm-version: ['6.0']
+        rocm-version: ['6.3']
         os-release: ['20.04']
         compiler: ['g++11']
     steps:
@@ -153,7 +153,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rocm-version: ['6.0']
+        rocm-version: ['6.3']
         os-release: ['15.5']
         compiler: ['g++11']
     steps:
