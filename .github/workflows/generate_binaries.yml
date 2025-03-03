@@ -68,7 +68,7 @@ jobs:
             python3 -m pip install 'cmake==3.22'
             yum install -y https://repo.radeon.com/amdgpu-install/${{ matrix.rocm-version }}/rhel/${{ matrix.os-release }}/amdgpu-install-${ROCM_MAJOR}.${ROCM_MINOR}.${ROCM_VERSN}-1${RPM_TAG}.noarch.rpm
             yum install -y rocm-dev rocm-smi-lib rocprofiler-dev
-            yum install -y devtoolset-11-*
+            # yum install -y devtoolset-11
 
       - name: Create roofline binary
         run:
@@ -189,7 +189,7 @@ jobs:
             zypper addrepo https://download.opensuse.org/repositories/devel:gcc/openSUSE_Factory/devel:gcc.repo
             zypper refresh
             zypper install gcc11
-            zypper --non-interactive --no-gpg-checks install -y https://repo.radeon.com/amdgpu-install/${{ matrix.rocm-version }}/sle/${{ matrix.os-release }}/amdgpu-install-${{ env.ROCM_MAJOR }}.${{ env.ROCM_MINOR }}.60000-1.noarch.rpm
+            zypper --non-interactive --no-gpg-checks install -y https://repo.radeon.com/amdgpu-install/${{ matrix.rocm-version }}/sle/${{ matrix.os-release }}/amdgpu-install-${{ env.ROCM_MAJOR }}.${{ env.ROCM_MINOR }}.60300-1.noarch.rpm
             zypper --non-interactive --no-gpg-checks refresh
             zypper --non-interactive --no-gpg-checks install -y rocm-dev rocm-smi-lib rocprofiler-dev
       
