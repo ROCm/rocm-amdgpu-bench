@@ -11,8 +11,10 @@ utility directly measures performance for a variety of micro-benchmarks includin
 * L2 Bandwidth
 * L1 Bandwidth
 * LDS Bandwidth
+* Peak FLOPs (FP8)
 * Peak FLOPs (FP32)
 * Peak FLOPs (FP64)
+* Peak MFMA FLOPs (F8)
 * Peak MFMA FLOPs (BF16)
 * Peak MFMA FLOPs (F16)
 * Peak MFMA FLOPs (F32)
@@ -29,7 +31,7 @@ machine learning/HPC workloads.
 Compilation requires a working HIP environment that is typically
 provided via a local [ROCm](https://rocm.docs.amd.com/en/latest/)
 install (e.g. via installation of the `rocm-hip-sdk` package) along
-with the `cmake` build tool.
+with the `cmake` build tool. ROCm 6.2 or later is required to build.
 
 ### Configure
 

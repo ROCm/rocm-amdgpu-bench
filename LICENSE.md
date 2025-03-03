@@ -1,4 +1,4 @@
-Copyright (C) 2014-2024 Advanced Micro Devices, Inc. All Rights Reserved.
+Copyright (C) 2014-2025 Advanced Micro Devices, Inc. All Rights Reserved.
 
 Redistribution and use of this software in unmodified binary form only are permitted provided that the following conditions are met:
 ```
