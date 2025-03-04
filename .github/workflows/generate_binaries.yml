@@ -171,6 +171,8 @@ jobs:
           echo "ROCM_MINOR=$(echo '${{ matrix.rocm-version }}' | sed 's/\./ /g' | awk '{print $2}')" >> $GITHUB_ENV &&
           echo "OS_VERSION_MAJOR=$(cat /etc/os-release | grep 'VERSION_ID' | sed 's/=/ /1' | awk '{print $NF}' | sed 's/"//g' | sed 's/\./ /g' | awk '{print $1}')" >> $GITHUB_ENV &&
           echo "OS_VERSION_MINOR=$(cat /etc/os-release | grep 'VERSION_ID' | sed 's/=/ /1' | awk '{print $NF}' | sed 's/"//g' | sed 's/\./ /g' | awk '{print $2}')" >> $GITHUB_ENV
+          echo "CC=$(echo '${{ matrix.compiler }}' | sed 's/+/c/g')" >> $GITHUB_ENV &&
+          echo "CXX=${{ matrix.compiler }}" >> $GITHUB_ENV &&
           #echo "ROCM_VERSN=$(( (${{ env.ROCM_MAJOR }}*10000)+(${{ env.ROCM_MINOR }}*100) ))" >> $GITHUB_ENV &&
 
       - name: Install packages
@@ -198,7 +200,7 @@ jobs:
           git config --global --add safe.directory ${PWD} &&
           export PATH=/opt/rocm/bin:$PATH &&
           mkdir -p build && cd build &&
-          cmake .. &&
+          cmake -DCMAKE_C_COMPILER=$(echo '${{ matrix.compiler }}' | sed 's/+/c/g') -DCMAKE_CXX_COMPILER=${{ matrix.compiler }} .. &&
           make -j &&
           mv roofline roofline-sles${{ env.OS_VERSION_MAJOR }}sp${{ env.OS_VERSION_MINOR }}-mi300-rocm${{ env.ROCM_MAJOR }}
 
