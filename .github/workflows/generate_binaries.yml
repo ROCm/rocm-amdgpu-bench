@@ -34,7 +34,7 @@ jobs:
       matrix:
         rocm-version: ['6.3']
         os-release: ['8.10']
-        compiler: ['g++']
+        compiler: ['g++11']
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
@@ -68,7 +68,7 @@ jobs:
             if [ "${OS_VERSION_MAJOR}" -eq 8 ]; then PERL_REPO=powertools; else PERL_REPO=crb; fi
             dnf -y --enablerepo=${PERL_REPO} install perl-File-BaseDir
             python3 -m pip install --upgrade pip
-            python3 -m pip install 'cmake==3.21'
+            python3 -m pip install 'cmake==3.22'
             yum install -y https://repo.radeon.com/amdgpu-install/${{ matrix.rocm-version }}/rhel/${{ matrix.os-release }}/amdgpu-install-${ROCM_MAJOR}.${ROCM_MINOR}.${ROCM_VERSN}-1${RPM_TAG}.noarch.rpm
             yum install -y rocm-dev amd-smi-lib rocprofiler-dev
             # yum install -y devtoolset-11
@@ -188,7 +188,7 @@ jobs:
           shell: bash
           command: |
             python3 -m pip install --upgrade pip
-            python3 -m pip install 'cmake==3.21'
+            python3 -m pip install 'cmake==3.22'
             zypper addrepo  https://download.opensuse.org/repositories/devel:languages:perl/${{ matrix.os-release }}/devel:languages:perl.repo
             zypper --non-interactive --no-gpg-checks install -y kernel-default-devel
             zypper addrepo https://download.opensuse.org/repositories/SUSE:SLE-15:Update/pool/SUSE:SLE-15:Update.repo
