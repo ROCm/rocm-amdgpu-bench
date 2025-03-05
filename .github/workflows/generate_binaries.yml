@@ -47,9 +47,9 @@ jobs:
         run:
           echo "ROCM_MAJOR=$(echo '${{ matrix.rocm-version }}' | sed 's/\./ /g' | awk '{print $1}')" >> $GITHUB_ENV &&
           echo "OS_VERSION_MAJOR=$(cat /etc/os-release | grep 'VERSION_ID' | sed 's/=/ /1' | awk '{print $NF}' | sed 's/"//g' | sed 's/\./ /g' | awk '{print $1}')" >> $GITHUB_ENV &&
-          echo "CC=$(echo '${{ matrix.compiler }}' | sed 's/+/c/g')" >> $GITHUB_ENV &&
+          echo "CC=$(echo '${{ matrix.compiler }}' | sed 's/+/c/g')" >> $GITHUB_ENV
           #echo "CXX=${{ matrix.compiler }}" >> $GITHUB_ENV &&
-          env
+          #env
       
       - name: Install packages
         timeout-minutes: 25
