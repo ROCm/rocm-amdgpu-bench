@@ -98,7 +98,7 @@ jobs:
       matrix:
         rocm-version: ['6.3']
         os-release: ['20.04']
-        compiler: ['g++-']
+        compiler: ['g++-11']
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
@@ -175,8 +175,8 @@ jobs:
           echo "ROCM_MINOR=$(echo '${{ matrix.rocm-version }}' | sed 's/\./ /g' | awk '{print $2}')" >> $GITHUB_ENV &&
           echo "OS_VERSION_MAJOR=$(cat /etc/os-release | grep 'VERSION_ID' | sed 's/=/ /1' | awk '{print $NF}' | sed 's/"//g' | sed 's/\./ /g' | awk '{print $1}')" >> $GITHUB_ENV &&
           echo "OS_VERSION_MINOR=$(cat /etc/os-release | grep 'VERSION_ID' | sed 's/=/ /1' | awk '{print $NF}' | sed 's/"//g' | sed 's/\./ /g' | awk '{print $2}')" >> $GITHUB_ENV &&
-          echo "CC=$(echo '${{ matrix.compiler }}' | sed 's/+/c/g')" >> $GITHUB_ENV
-          #echo "CXX=${{ matrix.compiler }}" >> $GITHUB_ENV
+          echo "CC=$(echo '${{ matrix.compiler }}' | sed 's/+/c/g')" >> $GITHUB_ENV &&
+          echo "CXX=${{ matrix.compiler }}" >> $GITHUB_ENV
           #echo "ROCM_VERSN=$(( (${{ env.ROCM_MAJOR }}*10000)+(${{ env.ROCM_MINOR }}*100) ))" >> $GITHUB_ENV &&
 
       - name: Install packages
@@ -192,9 +192,9 @@ jobs:
             python3 -m pip install 'cmake==3.22'
             zypper addrepo  https://download.opensuse.org/repositories/devel:languages:perl/${{ matrix.os-release }}/devel:languages:perl.repo
             zypper --non-interactive --no-gpg-checks install -y kernel-default-devel
-            zypper addrepo https://download.opensuse.org/repositories/SUSE:SLE-15:Update/pool/SUSE:SLE-15:Update.repo
-            zypper --non-interactive --no-gpg-checks refresh
-            zypper --non-interactive --no-gpg-checks install -y gcc11
+            # zypper addrepo https://download.opensuse.org/repositories/SUSE:SLE-15:Update/pool/SUSE:SLE-15:Update.repo
+            # zypper --non-interactive --no-gpg-checks refresh
+            # zypper --non-interactive --no-gpg-checks install -y gcc11
             zypper --non-interactive --no-gpg-checks install -y https://repo.radeon.com/amdgpu-install/${{ matrix.rocm-version }}/sle/${{ matrix.os-release }}/amdgpu-install-${{ env.ROCM_MAJOR }}.${{ env.ROCM_MINOR }}.60300-1.noarch.rpm
             zypper --non-interactive --no-gpg-checks refresh
             zypper --non-interactive --no-gpg-checks install -y rocm-dev amd-smi-lib rocprofiler-dev
