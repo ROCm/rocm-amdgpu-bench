@@ -184,10 +184,10 @@ int main(int argc, char **argv)
     {
         auto gcnArch = device_arch(devID);
         quiet = false;
-        if (not supported_archs.contains(gcnArch))
-        {
-            printf("Unsupported device architecture \"%s\" will be skipped\n", gcnArch.c_str());
-        }
+        // if (not supported_archs.contains(gcnArch))
+        // {
+        //     printf("Unsupported device architecture \"%s\" will be skipped\n", gcnArch.c_str());
+        // }
     }
 
     printf("Total detected GPU devices: %d\n", numGpuDevices);
@@ -231,7 +231,8 @@ int main(int argc, char **argv)
 
         /* Skip incompatible devices */
         auto gcnArch = device_arch(dev);
-        if ((not supported_archs.contains(gcnArch)) || ((devID >= 0) && (dev != devID)))
+        // if ((not supported_archs.contains(gcnArch)) || ((devID >= 0) && (dev != devID)))
+        if ((devID >= 0) && (dev != devID))
         {
             printf("GPU Device %d: Skipped\n", dev);
             continue;
@@ -311,18 +312,18 @@ int main(int argc, char **argv)
         currBenchmark++;
         int cacheSize = arch_sizes[gcnArch].MALL_size;
         archs_t mall_unsupported{"gfx908", "gfx90a"};
-        if (mall_unsupported.contains(gcnArch))
-        {
-            totalBytes = 0;
-            samples[0] = 0;
-            numExperiments = 1;
-            eventMs = 0;
-            if (!quiet)
-            {
-                showProgress(1);
-            }
-        }
-        else
+        // if (mall_unsupported.contains(gcnArch))
+        // {
+        //     totalBytes = 0;
+        //     samples[0] = 0;
+        //     numExperiments = 1;
+        //     eventMs = 0;
+        //     if (!quiet)
+        //     {
+        //         showProgress(1);
+        //     }
+        // }
+        // else
         {
             HIP_ASSERT(hipMalloc(&memBlock, cacheSize));
             HIP_ASSERT(hipMalloc(&dummy, workgroupSize * sizeof(float)));
@@ -559,18 +560,18 @@ int main(int argc, char **argv)
         numExperiments = DEFAULT_NUM_EXPERIMENTS;
         currBenchmark++;
         archs_t f8_unsupported{"gfx908", "gfx90a"};
-        if (f8_unsupported.contains(gcnArch))
-        {
-            totalFlops = 0;
-            samples[0] = 0;
-            numExperiments = 1;
-            eventMs = 0;
-            if (!quiet)
-            {
-                showProgress(1);
-            }
-        }
-        else
+        // if (f8_unsupported.contains(gcnArch))
+        // {
+        //     totalFlops = 0;
+        //     samples[0] = 0;
+        //     numExperiments = 1;
+        //     eventMs = 0;
+        //     if (!quiet)
+        //     {
+        //         showProgress(1);
+        //     }
+        // }
+        // else
         {
             nSize = DEFAULT_DATASET_SIZE / sizeof(__hip_fp8_storage_t) / numThreads * numThreads;
             hipLaunchKernelGGL((flops_benchmark<__hip_fp8_storage_t, 1024>), dim3(numWorkgroups), dim3(workgroupSize), 0, 0, (__hip_fp8_storage_t *)memBlock, nSize);
@@ -711,18 +712,18 @@ int main(int argc, char **argv)
         numExperiments = DEFAULT_NUM_EXPERIMENTS;
         currBenchmark++;
         archs_t mfma_f8_unsupported{"gfx908", "gfx90a"};
-        if (mfma_f8_unsupported.contains(gcnArch))
-        {
-            totalFlops = 0;
-            samples[0] = 0;
-            numExperiments = 1;
-            eventMs = 0;
-            if (!quiet)
-            {
-                showProgress(1);
-            }
-        }
-        else
+        // if (mfma_f8_unsupported.contains(gcnArch))
+        // {
+        //     totalFlops = 0;
+        //     samples[0] = 0;
+        //     numExperiments = 1;
+        //     eventMs = 0;
+        //     if (!quiet)
+        //     {
+        //         showProgress(1);
+        //     }
+        // }
+        // else
         {
             totalFlops = (uint64_t)numWorkgroups * SIMDS_PER_CU * numIters * MFMA_F8_OPS;
             for (int n = 0; n < numExperiments; n++)
@@ -762,7 +763,7 @@ int main(int argc, char **argv)
         numExperiments = DEFAULT_NUM_EXPERIMENTS;
         currBenchmark++;
         archs_t mfma_bf16_unsupported{"gfx940", "gfx941", "gfx942"};
-        if (mfma_bf16_unsupported.contains(gcnArch))
+        // if (mfma_bf16_unsupported.contains(gcnArch))
         {
             totalFlops = 0;
             samples[0] = 0;
@@ -773,23 +774,23 @@ int main(int argc, char **argv)
                 showProgress(1);
             }
         }
-        else
-        {
-            totalFlops = (uint64_t)numWorkgroups * SIMDS_PER_CU * numIters * MFMA_BF16_OPS;
-            for (int n = 0; n < numExperiments; n++)
-            {
+        // else
+        // {
+        //     totalFlops = (uint64_t)numWorkgroups * SIMDS_PER_CU * numIters * MFMA_BF16_OPS;
+        //     for (int n = 0; n < numExperiments; n++)
+        //     {
 
-                initHipEvents(start, stop);
-                hipLaunchKernelGGL(mfma_bf16, dim3(numWorkgroups), dim3(workgroupSize), 0, 0, numIters, dummy);
-                stopHipEvents(eventMs, start, stop);
+        //         initHipEvents(start, stop);
+        //         hipLaunchKernelGGL(mfma_bf16, dim3(numWorkgroups), dim3(workgroupSize), 0, 0, numIters, dummy);
+        //         stopHipEvents(eventMs, start, stop);
 
-                samples[n] = totalFlops / eventMs / 1e6;
-                if (!quiet)
-                {
-                    showProgress((float)n / numExperiments);
-                }
-            }
-        }
+        //         samples[n] = totalFlops / eventMs / 1e6;
+        //         if (!quiet)
+        //         {
+        //             showProgress((float)n / numExperiments);
+        //         }
+        //     }
+        // }
         stats(samples, numExperiments, &mean, &stdev, &confidence);
 
         perf_metrics.push_back(mean);
@@ -887,18 +888,18 @@ int main(int argc, char **argv)
         numExperiments = DEFAULT_NUM_EXPERIMENTS;
         currBenchmark++;
         archs_t mfma_f64_unsupported{"gfx908"};
-        if (mfma_f64_unsupported.contains(gcnArch))
-        {
-            totalFlops = 0;
-            samples[0] = 0;
-            numExperiments = 1;
-            eventMs = 0;
-            if (!quiet)
-            {
-                showProgress(1);
-            }
-        }
-        else
+        // if (mfma_f64_unsupported.contains(gcnArch))
+        // {
+        //     totalFlops = 0;
+        //     samples[0] = 0;
+        //     numExperiments = 1;
+        //     eventMs = 0;
+        //     if (!quiet)
+        //     {
+        //         showProgress(1);
+        //     }
+        // }
+        // else
         {
             totalFlops = (uint64_t)numWorkgroups * SIMDS_PER_CU * numIters * MFMA_F64_OPS;
             for (int n = 0; n < numExperiments; n++)
@@ -939,7 +940,7 @@ int main(int argc, char **argv)
         numExperiments = DEFAULT_NUM_EXPERIMENTS;
         currBenchmark++;
         archs_t mfma_i8_unsupported{"gfx940", "gfx941", "gfx942"};
-        if (mfma_i8_unsupported.contains(gcnArch))
+        // if (mfma_i8_unsupported.contains(gcnArch))
         {
             totalFlops = 0;
             samples[0] = 0;
@@ -950,23 +951,23 @@ int main(int argc, char **argv)
                 showProgress(1);
             }
         }
-        else
-        {
-            totalFlops = (uint64_t)numWorkgroups * SIMDS_PER_CU * numIters * MFMA_I8_OPS;
-            for (int n = 0; n < numExperiments; n++)
-            {
+        // else
+        // {
+        //     totalFlops = (uint64_t)numWorkgroups * SIMDS_PER_CU * numIters * MFMA_I8_OPS;
+        //     for (int n = 0; n < numExperiments; n++)
+        //     {
 
-                initHipEvents(start, stop);
-                hipLaunchKernelGGL(mfma_i8, dim3(numWorkgroups), dim3(workgroupSize), 0, 0, numIters, dummy);
-                stopHipEvents(eventMs, start, stop);
+        //         initHipEvents(start, stop);
+        //         hipLaunchKernelGGL(mfma_i8, dim3(numWorkgroups), dim3(workgroupSize), 0, 0, numIters, dummy);
+        //         stopHipEvents(eventMs, start, stop);
 
-                samples[n] = totalFlops / eventMs / 1e6;
-                if (!quiet)
-                {
-                    showProgress((float)n / numExperiments);
-                }
-            }
-        }
+        //         samples[n] = totalFlops / eventMs / 1e6;
+        //         if (!quiet)
+        //         {
+        //             showProgress((float)n / numExperiments);
+        //         }
+        //     }
+        // }
 
         stats(samples, numExperiments, &mean, &stdev, &confidence);
 
