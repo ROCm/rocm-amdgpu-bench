@@ -34,7 +34,7 @@ jobs:
       matrix:
         rocm-version: ['6.3']
         os-release: ['8.10']
-        compiler: ['g++11']
+        compiler: ['g++']
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
@@ -71,8 +71,8 @@ jobs:
             python3 -m pip install 'cmake==3.22'
             yum install -y https://repo.radeon.com/amdgpu-install/${{ matrix.rocm-version }}/rhel/${{ matrix.os-release }}/amdgpu-install-${ROCM_MAJOR}.${ROCM_MINOR}.${ROCM_VERSN}-1${RPM_TAG}.noarch.rpm
             yum install -y rocm-dev amd-smi-lib rocprofiler-dev
-            yum install -y gcc-toolset-11
-            scl enable gcc-toolset-11 bash
+            # yum install -y gcc-toolset-11
+            # scl enable gcc-toolset-11 bash
 
       - name: Create roofline binary
         run:
@@ -98,7 +98,7 @@ jobs:
       matrix:
         rocm-version: ['6.3']
         os-release: ['20.04']
-        compiler: ['g++-11']
+        compiler: ['g++-']
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
@@ -159,7 +159,7 @@ jobs:
       matrix:
         rocm-version: ['6.3']
         os-release: ['15.5']
-        compiler: ['g++11']
+        compiler: ['g++']
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
