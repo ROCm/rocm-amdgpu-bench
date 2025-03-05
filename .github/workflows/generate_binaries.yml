@@ -34,7 +34,7 @@ jobs:
       matrix:
         rocm-version: ['6.3']
         os-release: ['8.8']
-        compiler: ['g++11']
+        compiler: ['g++']
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
@@ -60,17 +60,17 @@ jobs:
           max_attempts: 5
           shell: bash
           command: |
-            RPM_TAG=".el${{ env.OS_VERSION_MAJOR }}"
-            ROCM_VERSION=${{ matrix.rocm-version }}
-            ROCM_MAJOR=$(echo ${ROCM_VERSION} | sed 's/\./ /g' | awk '{print $1}')
-            ROCM_MINOR=$(echo ${ROCM_VERSION} | sed 's/\./ /g' | awk '{print $2}')
-            ROCM_VERSN=$(( (${ROCM_MAJOR}*10000)+(${ROCM_MINOR}*100) ))
-            if [ "${OS_VERSION_MAJOR}" -eq 8 ]; then PERL_REPO=powertools; else PERL_REPO=crb; fi
-            dnf -y --enablerepo=${PERL_REPO} install perl-File-BaseDir
-            python3 -m pip install --upgrade pip
-            python3 -m pip install 'cmake==3.22'
-            yum install -y https://repo.radeon.com/amdgpu-install/${{ matrix.rocm-version }}/rhel/${{ matrix.os-release }}/amdgpu-install-${ROCM_MAJOR}.${ROCM_MINOR}.${ROCM_VERSN}-1${RPM_TAG}.noarch.rpm
-            yum install -y rocm-dev rocm-smi-lib rocprofiler-dev
+            RPM_TAG=".el${{ env.OS_VERSION_MAJOR }}" &&
+            ROCM_VERSION=${{ matrix.rocm-version }} &&
+            ROCM_MAJOR=$(echo ${ROCM_VERSION} | sed 's/\./ /g' | awk '{print $1}') &&
+            ROCM_MINOR=$(echo ${ROCM_VERSION} | sed 's/\./ /g' | awk '{print $2}') &&
+            ROCM_VERSN=$(( (${ROCM_MAJOR}*10000)+(${ROCM_MINOR}*100) )) &&
+            if [ "${OS_VERSION_MAJOR}" -eq 8 ]; then PERL_REPO=powertools; else PERL_REPO=crb; fi &&
+            dnf -y --enablerepo=${PERL_REPO} install perl-File-BaseDir &&
+            python3 -m pip install --upgrade pip &&
+            python3 -m pip install 'cmake==3.22' &&
+            yum install -y https://repo.radeon.com/amdgpu-install/${{ matrix.rocm-version }}/rhel/${{ matrix.os-release }}/amdgpu-install-${ROCM_MAJOR}.${ROCM_MINOR}.${ROCM_VERSN}-1${RPM_TAG}.noarch.rpm &&
+            yum install -y rocm-dev amd-smi-lib rocprofiler-dev &&
             # yum install -y devtoolset-11
 
       - name: Create roofline binary
@@ -158,7 +158,7 @@ jobs:
       matrix:
         rocm-version: ['6.3']
         os-release: ['15.5']
-        compiler: ['g++11']
+        compiler: ['g++']
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
@@ -187,16 +187,16 @@ jobs:
           max_attempts: 5
           shell: bash
           command: |
-            python3 -m pip install --upgrade pip
-            python3 -m pip install 'cmake==3.22'
-            zypper addrepo  https://download.opensuse.org/repositories/devel:languages:perl/${{ matrix.os-release }}/devel:languages:perl.repo
-            zypper --non-interactive --no-gpg-checks install -y kernel-default-devel
-            zypper addrepo https://download.opensuse.org/repositories/devel:gcc/openSUSE_Factory/devel:gcc.repo
-            zypper refresh
-            zypper --non-interactive --no-gpg-checks install -y gcc11
-            zypper --non-interactive --no-gpg-checks install -y https://repo.radeon.com/amdgpu-install/${{ matrix.rocm-version }}/sle/${{ matrix.os-release }}/amdgpu-install-${{ env.ROCM_MAJOR }}.${{ env.ROCM_MINOR }}.60300-1.noarch.rpm
-            zypper --non-interactive --no-gpg-checks refresh
-            zypper --non-interactive --no-gpg-checks install -y rocm-dev rocm-smi-lib rocprofiler-dev
+            python3 -m pip install --upgrade pip &&
+            python3 -m pip install 'cmake==3.22' &&
+            zypper addrepo  https://download.opensuse.org/repositories/devel:languages:perl/${{ matrix.os-release }}/devel:languages:perl.repo &&
+            zypper --non-interactive --no-gpg-checks install -y kernel-default-devel &&
+            zypper addrepo https://download.opensuse.org/repositories/devel:gcc/openSUSE_Factory/devel:gcc.repo &&
+            zypper refresh &&
+            zypper --non-interactive --no-gpg-checks install -y gcc11 &&
+            zypper --non-interactive --no-gpg-checks install -y https://repo.radeon.com/amdgpu-install/${{ matrix.rocm-version }}/sle/${{ matrix.os-release }}/amdgpu-install-${{ env.ROCM_MAJOR }}.${{ env.ROCM_MINOR }}.60300-1.noarch.rpm &&
+            zypper --non-interactive --no-gpg-checks refresh &&
+            zypper --non-interactive --no-gpg-checks install -y rocm-dev amd-smi-lib rocprofiler-dev
       
       - name: Create roofline binary
         run:
