@@ -800,13 +800,13 @@ int main(int argc, char **argv)
         if (quiet)
         {
 
-            statsMap[dev]["Peak FLOPs (INT8)"]["mean"] = mean;
-            statsMap[dev]["Peak FLOPs (INT8)"]["stdev"] = stdev;
+            statsMap[dev]["Peak GOPs (INT8)"]["mean"] = mean;
+            statsMap[dev]["Peak GOPs (INT8)"]["stdev"] = stdev;
             showProgress(((float)dev + currBenchmark / numBenchmarks) / numGpuDevices);
         }
         else
         {
-            printf("\nPeak FLOPs (INT8), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, FLOP:%lu, duration:%.1f ms, mean:%f.1 GFLOPS, stdev=%.1f GFLOPS\n",
+            printf("\nPeak IOPs (INT8), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, IOP:%lu, duration:%.1f ms, mean:%f.1 GOPS, stdev=%.1f GOPS\n",
                    dev, workgroupSize, numWorkgroups, numExperiments, totalFlops, eventMs, mean, stdev);
         }
 
@@ -841,13 +841,13 @@ int main(int argc, char **argv)
         if (quiet)
         {
 
-            statsMap[dev]["Peak FLOPs (INT32)"]["mean"] = mean;
-            statsMap[dev]["Peak FLOPs (INT32)"]["stdev"] = stdev;
+            statsMap[dev]["Peak GOPs (INT32)"]["mean"] = mean;
+            statsMap[dev]["Peak GOPs (INT32)"]["stdev"] = stdev;
             showProgress(((float)dev + currBenchmark / numBenchmarks) / numGpuDevices);
         }
         else
         {
-            printf("\nPeak FLOPs (INT32), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, FLOP:%lu, duration:%.1f ms, mean:%f.1 GFLOPS, stdev=%.1f GFLOPS\n",
+            printf("\nPeak IOPs (INT32), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, IOP:%lu, duration:%.1f ms, mean:%f.1 GOPS, stdev=%.1f GOPS\n",
                    dev, workgroupSize, numWorkgroups, numExperiments, totalFlops, eventMs, mean, stdev);
         }
 
@@ -882,13 +882,13 @@ int main(int argc, char **argv)
         if (quiet)
         {
 
-            statsMap[dev]["Peak FLOPs (INT64)"]["mean"] = mean;
-            statsMap[dev]["Peak FLOPs (INT64)"]["stdev"] = stdev;
+            statsMap[dev]["Peak GOPs (INT64)"]["mean"] = mean;
+            statsMap[dev]["Peak GOPs (INT64)"]["stdev"] = stdev;
             showProgress(((float)dev + currBenchmark / numBenchmarks) / numGpuDevices);
         }
         else
         {
-            printf("\nPeak FLOPs (INT64), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, FLOP:%lu, duration:%.1f ms, mean:%f.1 GFLOPS, stdev=%.1f GFLOPS\n",
+            printf("\nPeak IOPs (INT64), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, IOP:%lu, duration:%.1f ms, mean:%f.1 GOPS, stdev=%.1f GOPS\n",
                    dev, workgroupSize, numWorkgroups, numExperiments, totalFlops, eventMs, mean, stdev);
         }
 
@@ -1162,6 +1162,8 @@ int main(int argc, char **argv)
         ofile << "\n";
     }
 
+// TODO: quiet printing to be reformatted
+/*
     if (quiet)
     {
         printf("\nGPU ID");
@@ -1200,6 +1202,7 @@ int main(int argc, char **argv)
             }
         }
     }
+*/
 
     printf("\n");
 
