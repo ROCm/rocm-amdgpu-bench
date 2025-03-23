@@ -35,6 +35,8 @@ THE SOFTWARE.
 #include <map>
 
 #include <hip/hip_fp8.h>
+#include <hip/hip_bfloat16.h>
+#include <hip/hip_fp16.h>
 
 #include "roofline.h"
 #include "kernels.h"
@@ -177,14 +179,24 @@ int main(int argc, char **argv)
     int numGpuDevices;
     HIP_ASSERT(hipGetDeviceCount(&numGpuDevices));
 
-    using archs_t = std::unordered_set<std::string>;
-    archs_t supported_archs{"gfx908", "gfx90a", "gfx940", "gfx941", "gfx942"};
+    using datatypes = std::unordered_set<std::string>;
+    using archs_t = std::map<std::string, datatypes>;
+    datatypes unsupported_datatypes;
+
+    /* supported_archs_unsupported_dt indicates supported archs and the corrseponding datatypes which ARE NOT supported by each arch */
+    archs_t supported_archs_unsupported_dt = {
+        {"gfx908", {"MALL", "FP8", "FP16", "MFMA-F8", "MFMA-F64"}}, // MI100 series
+        {"gfx90a", {"MALL", "FP8", "FP16", "MFMA-F8"}},             // MI200 series
+        {"gfx940", {}}, // MI300A_A0
+        {"gfx941", {}}, // MI300X_A0
+        {"gfx942", {}}, // MI300A_A1, MI300X_A1
+    };
 
     if ((devID >= 0) && (devID < numGpuDevices))
     {
         auto gcnArch = device_arch(devID);
         quiet = false;
-        if (not supported_archs.contains(gcnArch))
+        if (auto search = supported_archs_unsupported_dt.find(gcnArch); search == supported_archs_unsupported_dt.end())
         {
             printf("Unsupported device architecture \"%s\" will be skipped\n", gcnArch.c_str());
         }
@@ -211,14 +223,17 @@ int main(int argc, char **argv)
     ofile.open(csvFile);
     ofile << "device,HBMBw,HBMBwLow,hbmBwHigh,MALLBw,MALLBwLow,MALLBwHigh,";
     ofile << "L2Bw,L2BwLow,L2BwHigh,L1Bw,L1BwLow,L1BwHigh,LDSBw,LDSBwLow,LDSBwHigh,";
-    ofile << "FP8Flops,FP8FlopsLow,FP8FlopsHigh,";
+    ofile << "FP8Flops,FP8FlopsLow,FP8FlopsHigh,FP16Flops,FP16FlopsLow,FP16FlopsHigh,";
     ofile << "FP32Flops,FP32FlopsLow,FP32FlopsHigh,FP64Flops,FP64FlopsLow,FP64FlopsHigh,";
+    ofile << "I8Ops,I8OpsLow,I8OpsHigh,";
+    ofile << "I32Ops,I32OpsLow,I32OpsHigh,";
+    ofile << "I64Ops,I64OpsLow,I64OpsHigh,";
     ofile << "MFMAF8Flops,MFMAF8FlopsLow,MFMAF8FlopsHigh,";
-    ofile << "MFMABF16Flops,MFMABF16FlopsLow,MFMABF16FlopsHigh,";
     ofile << "MFMAF16Flops,MFMAF16FlopsLow,MFMAF16FlopsHigh,";
+    ofile << "MFMABF16Flops,MFMABF16FlopsLow,MFMABF16FlopsHigh,";
     ofile << "MFMAF32Flops,MFMAF32FlopsLow,MFMAF32FlopsHigh,";
     ofile << "MFMAF64Flops,MFMAF64FlopsLow,MFMAF64FlopsHigh,";
-    ofile << "MFMAI8Ops,MFMAFI8OpsLow,MFMAI8OpsHigh\n";
+    ofile << "MFMAI8Ops,MFMAI8OpsLow,MFMAI8OpsHigh\n";
 
     for (int dev = 0; dev < numGpuDevices; dev++)
     {
@@ -231,10 +246,16 @@ int main(int argc, char **argv)
 
         /* Skip incompatible devices */
         auto gcnArch = device_arch(dev);
-        if ((not supported_archs.contains(gcnArch)) || ((devID >= 0) && (dev != devID)))
+        auto searchArch = supported_archs_unsupported_dt.find(gcnArch);
+        if ((searchArch == supported_archs_unsupported_dt.end()) || ((devID >= 0) && (dev != devID)))
         {
             printf("GPU Device %d: Skipped\n", dev);
             continue;
+        }
+        else
+        {
+            /* Arch supported, record list of unsupported datatypes for referencing when profiling this individual device */
+            unsupported_datatypes = searchArch->second;
         }
         if (!quiet)
         {
@@ -310,8 +331,7 @@ int main(int argc, char **argv)
         numExperiments = DEFAULT_NUM_EXPERIMENTS;
         currBenchmark++;
         int cacheSize = arch_sizes[gcnArch].MALL_size;
-        archs_t mall_unsupported{"gfx908", "gfx90a"};
-        if (mall_unsupported.contains(gcnArch))
+        if (auto search = unsupported_datatypes.find("MALL"); search != unsupported_datatypes.end())
         {
             totalBytes = 0;
             samples[0] = 0;
@@ -556,10 +576,8 @@ int main(int argc, char **argv)
         int numThreads = numWorkgroups * workgroupSize;
 
         /* FP8 benchmark */
-        numExperiments = DEFAULT_NUM_EXPERIMENTS;
         currBenchmark++;
-        archs_t f8_unsupported{"gfx908", "gfx90a"};
-        if (f8_unsupported.contains(gcnArch))
+        if (auto search = unsupported_datatypes.find("FP8"); search != unsupported_datatypes.end())
         {
             totalFlops = 0;
             samples[0] = 0;
@@ -612,7 +630,64 @@ int main(int argc, char **argv)
                    dev, workgroupSize, numWorkgroups, numExperiments, totalFlops, eventMs, mean, stdev);
         }
 
+        /* FP16 benchmark */
+        numExperiments = DEFAULT_NUM_EXPERIMENTS;
+        currBenchmark++;
+        if (auto search = unsupported_datatypes.find("FP16"); search != unsupported_datatypes.end())
+        {
+            totalFlops = 0;
+            samples[0] = 0;
+            numExperiments = 1;
+            eventMs = 0;
+            if (!quiet)
+            {
+                showProgress(1);
+            }
+        }
+        else
+        {
+            nSize = DEFAULT_DATASET_SIZE / sizeof(__half) / numThreads * numThreads;
+            hipLaunchKernelGGL((flops_benchmark<__half, 1024>), dim3(numWorkgroups), dim3(workgroupSize), 0, 0, (__half *)memBlock, nSize);
+            HIP_ASSERT(hipDeviceSynchronize());
+
+            totalFlops = (uint64_t)nSize * 1024 * 2;
+
+            for (int n = 0; n < numExperiments; n++)
+            {
+
+                initHipEvents(start, stop);
+                hipLaunchKernelGGL((flops_benchmark<__half, 1024>), dim3(numWorkgroups), dim3(workgroupSize), 0, 0, (__half *)memBlock, nSize);
+                stopHipEvents(eventMs, start, stop);
+
+                samples[n] = (float)totalFlops / eventMs / 1e6;
+                if (!quiet)
+                {
+                    showProgress((float)n / numExperiments);
+                }
+            }
+        }
+
+        stats(samples, numExperiments, &mean, &stdev, &confidence);
+
+        perf_metrics.push_back(mean);
+        perf_metrics.push_back(mean - confidence);
+        perf_metrics.push_back(mean + confidence);
+
+        if (quiet)
+        {
+
+            statsMap[dev]["Peak FLOPs (FP16)"]["mean"] = mean;
+            statsMap[dev]["Peak FLOPs (FP16)"]["stdev"] = stdev;
+            showProgress(((float)dev + currBenchmark / numBenchmarks) / numGpuDevices);
+        }
+        else
+        {
+            printf("\nPeak FLOPs (FP16), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, FLOP:%lu, duration:%.1f ms, mean:%.1f GFLOPS, stdev=%.1f GFLOPS\n",
+                   dev, workgroupSize, numWorkgroups, numExperiments, totalFlops, eventMs, mean, stdev);
+        }
+
         /* FP32 benchmark */
+        numExperiments = DEFAULT_NUM_EXPERIMENTS;
         nSize = DEFAULT_DATASET_SIZE / sizeof(float) / numThreads * numThreads;
 
         hipLaunchKernelGGL((flops_benchmark<float, 1024>), dim3(numWorkgroups), dim3(workgroupSize), 0, 0, (float *)memBlock, nSize);
@@ -694,6 +769,129 @@ int main(int argc, char **argv)
                    dev, workgroupSize, numWorkgroups, numExperiments, totalFlops, eventMs, mean, stdev);
         }
 
+        /* INT8 benchmark */
+        numExperiments = DEFAULT_NUM_EXPERIMENTS;
+        nSize = DEFAULT_DATASET_SIZE / sizeof(int8_t) / numThreads * numThreads;
+        hipLaunchKernelGGL((flops_benchmark<int8_t, 1024>), dim3(numWorkgroups), dim3(workgroupSize), 0, 0, (int8_t *)memBlock, nSize);
+        HIP_ASSERT(hipDeviceSynchronize());
+
+        totalFlops = (uint64_t)nSize * 1024 * 2;
+        currBenchmark++;
+        for (int n = 0; n < numExperiments; n++)
+        {
+
+            initHipEvents(start, stop);
+            hipLaunchKernelGGL((flops_benchmark<int8_t, 1024>), dim3(numWorkgroups), dim3(workgroupSize), 0, 0, (int8_t *)memBlock, nSize);
+            stopHipEvents(eventMs, start, stop);
+
+            samples[n] = (float)totalFlops / eventMs / 1e6;
+            if (!quiet)
+            {
+                showProgress((float)n / numExperiments);
+            }
+        }
+
+        stats(samples, numExperiments, &mean, &stdev, &confidence);
+
+        perf_metrics.push_back(mean);
+        perf_metrics.push_back(mean - confidence);
+        perf_metrics.push_back(mean + confidence);
+
+        if (quiet)
+        {
+
+            statsMap[dev]["Peak FLOPs (INT8)"]["mean"] = mean;
+            statsMap[dev]["Peak FLOPs (INT8)"]["stdev"] = stdev;
+            showProgress(((float)dev + currBenchmark / numBenchmarks) / numGpuDevices);
+        }
+        else
+        {
+            printf("\nPeak FLOPs (INT8), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, FLOP:%lu, duration:%.1f ms, mean:%f.1 GFLOPS, stdev=%.1f GFLOPS\n",
+                   dev, workgroupSize, numWorkgroups, numExperiments, totalFlops, eventMs, mean, stdev);
+        }
+
+        /* INT32 benchmark */
+        numExperiments = DEFAULT_NUM_EXPERIMENTS;
+        nSize = DEFAULT_DATASET_SIZE / sizeof(int32_t) / numThreads * numThreads;
+        hipLaunchKernelGGL((flops_benchmark<int32_t, 1024>), dim3(numWorkgroups), dim3(workgroupSize), 0, 0, (int32_t *)memBlock, nSize);
+        HIP_ASSERT(hipDeviceSynchronize());
+
+        totalFlops = (uint64_t)nSize * 1024 * 2;
+        currBenchmark++;
+        for (int n = 0; n < numExperiments; n++)
+        {
+
+            initHipEvents(start, stop);
+            hipLaunchKernelGGL((flops_benchmark<int32_t, 1024>), dim3(numWorkgroups), dim3(workgroupSize), 0, 0, (int32_t *)memBlock, nSize);
+            stopHipEvents(eventMs, start, stop);
+
+            samples[n] = (float)totalFlops / eventMs / 1e6;
+            if (!quiet)
+            {
+                showProgress((float)n / numExperiments);
+            }
+        }
+
+        stats(samples, numExperiments, &mean, &stdev, &confidence);
+
+        perf_metrics.push_back(mean);
+        perf_metrics.push_back(mean - confidence);
+        perf_metrics.push_back(mean + confidence);
+
+        if (quiet)
+        {
+
+            statsMap[dev]["Peak FLOPs (INT32)"]["mean"] = mean;
+            statsMap[dev]["Peak FLOPs (INT32)"]["stdev"] = stdev;
+            showProgress(((float)dev + currBenchmark / numBenchmarks) / numGpuDevices);
+        }
+        else
+        {
+            printf("\nPeak FLOPs (INT32), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, FLOP:%lu, duration:%.1f ms, mean:%f.1 GFLOPS, stdev=%.1f GFLOPS\n",
+                   dev, workgroupSize, numWorkgroups, numExperiments, totalFlops, eventMs, mean, stdev);
+        }
+
+        /* INT64 benchmark */
+        numExperiments = DEFAULT_NUM_EXPERIMENTS;
+        nSize = DEFAULT_DATASET_SIZE / sizeof(int64_t) / numThreads * numThreads;
+        hipLaunchKernelGGL((flops_benchmark<int64_t, 1024>), dim3(numWorkgroups), dim3(workgroupSize), 0, 0, (int64_t *)memBlock, nSize);
+        HIP_ASSERT(hipDeviceSynchronize());
+
+        totalFlops = (uint64_t)nSize * 1024 * 2;
+        currBenchmark++;
+        for (int n = 0; n < numExperiments; n++)
+        {
+
+            initHipEvents(start, stop);
+            hipLaunchKernelGGL((flops_benchmark<int64_t, 1024>), dim3(numWorkgroups), dim3(workgroupSize), 0, 0, (int64_t *)memBlock, nSize);
+            stopHipEvents(eventMs, start, stop);
+
+            samples[n] = (float)totalFlops / eventMs / 1e6;
+            if (!quiet)
+            {
+                showProgress((float)n / numExperiments);
+            }
+        }
+
+        stats(samples, numExperiments, &mean, &stdev, &confidence);
+
+        perf_metrics.push_back(mean);
+        perf_metrics.push_back(mean - confidence);
+        perf_metrics.push_back(mean + confidence);
+
+        if (quiet)
+        {
+
+            statsMap[dev]["Peak FLOPs (INT64)"]["mean"] = mean;
+            statsMap[dev]["Peak FLOPs (INT64)"]["stdev"] = stdev;
+            showProgress(((float)dev + currBenchmark / numBenchmarks) / numGpuDevices);
+        }
+        else
+        {
+            printf("\nPeak FLOPs (INT64), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, FLOP:%lu, duration:%.1f ms, mean:%f.1 GFLOPS, stdev=%.1f GFLOPS\n",
+                   dev, workgroupSize, numWorkgroups, numExperiments, totalFlops, eventMs, mean, stdev);
+        }
+
         HIP_ASSERT(hipFree(memBlock));
 
         /* **********************************************
@@ -710,8 +908,7 @@ int main(int argc, char **argv)
         /* MFMA-F8 */
         numExperiments = DEFAULT_NUM_EXPERIMENTS;
         currBenchmark++;
-        archs_t mfma_f8_unsupported{"gfx908", "gfx90a"};
-        if (mfma_f8_unsupported.contains(gcnArch))
+        if (auto search = unsupported_datatypes.find("MFMA-F8"); search != unsupported_datatypes.end())
         {
             totalFlops = 0;
             samples[0] = 0;
@@ -758,57 +955,6 @@ int main(int argc, char **argv)
                    dev, workgroupSize, numWorkgroups, numExperiments, totalFlops, eventMs, mean, stdev);
         }
 
-        /* MFMA-BF16 */
-        numExperiments = DEFAULT_NUM_EXPERIMENTS;
-        currBenchmark++;
-        archs_t mfma_bf16_unsupported{"gfx940", "gfx941", "gfx942"};
-        if (mfma_bf16_unsupported.contains(gcnArch))
-        {
-            totalFlops = 0;
-            samples[0] = 0;
-            numExperiments = 1;
-            eventMs = 0;
-            if (!quiet)
-            {
-                showProgress(1);
-            }
-        }
-        else
-        {
-            totalFlops = (uint64_t)numWorkgroups * SIMDS_PER_CU * numIters * MFMA_BF16_OPS;
-            for (int n = 0; n < numExperiments; n++)
-            {
-
-                initHipEvents(start, stop);
-                hipLaunchKernelGGL(mfma_bf16, dim3(numWorkgroups), dim3(workgroupSize), 0, 0, numIters, dummy);
-                stopHipEvents(eventMs, start, stop);
-
-                samples[n] = totalFlops / eventMs / 1e6;
-                if (!quiet)
-                {
-                    showProgress((float)n / numExperiments);
-                }
-            }
-        }
-        stats(samples, numExperiments, &mean, &stdev, &confidence);
-
-        perf_metrics.push_back(mean);
-        perf_metrics.push_back(mean - confidence);
-        perf_metrics.push_back(mean + confidence);
-
-        if (quiet)
-        {
-
-            statsMap[dev]["Peak MFMA FLOPs (BF16)"]["mean"] = mean;
-            statsMap[dev]["Peak MFMA FLOPs (BF16)"]["stdev"] = stdev;
-            showProgress(((float)dev + currBenchmark / numBenchmarks) / numGpuDevices);
-        }
-        else
-        {
-            printf("\nPeak MFMA FLOPs (BF16), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, FLOP:%lu, duration:%.1f ms, mean:%.1f GFLOPS, stdev=%.1f GFLOPS\n",
-                   dev, workgroupSize, numWorkgroups, numExperiments, totalFlops, eventMs, mean, stdev);
-        }
-
         /* MFMA-F16 */
         numExperiments = DEFAULT_NUM_EXPERIMENTS;
         totalFlops = (uint64_t)numWorkgroups * SIMDS_PER_CU * numIters * MFMA_F16_OPS;
@@ -843,6 +989,43 @@ int main(int argc, char **argv)
         else
         {
             printf("\nPeak MFMA FLOPs (F16), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, FLOP:%lu, duration:%.1f ms, mean:%.1f GFLOPS, stdev=%.1f GFLOPS\n",
+                   dev, workgroupSize, numWorkgroups, numExperiments, totalFlops, eventMs, mean, stdev);
+        }
+
+        /* MFMA-BF16 */
+        numExperiments = DEFAULT_NUM_EXPERIMENTS;
+        currBenchmark++;
+        totalFlops = (uint64_t)numWorkgroups * SIMDS_PER_CU * numIters * MFMA_BF16_OPS;
+        for (int n = 0; n < numExperiments; n++)
+        {
+
+            initHipEvents(start, stop);
+            hipLaunchKernelGGL(mfma_bf16, dim3(numWorkgroups), dim3(workgroupSize), 0, 0, numIters, dummy);
+            stopHipEvents(eventMs, start, stop);
+
+            samples[n] = totalFlops / eventMs / 1e6;
+            if (!quiet)
+            {
+                showProgress((float)n / numExperiments);
+            }
+        }
+        
+        stats(samples, numExperiments, &mean, &stdev, &confidence);
+
+        perf_metrics.push_back(mean);
+        perf_metrics.push_back(mean - confidence);
+        perf_metrics.push_back(mean + confidence);
+
+        if (quiet)
+        {
+
+            statsMap[dev]["Peak MFMA FLOPs (BF16)"]["mean"] = mean;
+            statsMap[dev]["Peak MFMA FLOPs (BF16)"]["stdev"] = stdev;
+            showProgress(((float)dev + currBenchmark / numBenchmarks) / numGpuDevices);
+        }
+        else
+        {
+            printf("\nPeak MFMA FLOPs (BF16), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, FLOP:%lu, duration:%.1f ms, mean:%.1f GFLOPS, stdev=%.1f GFLOPS\n",
                    dev, workgroupSize, numWorkgroups, numExperiments, totalFlops, eventMs, mean, stdev);
         }
 
@@ -882,12 +1065,12 @@ int main(int argc, char **argv)
             printf("\nPeak MFMA FLOPs (F32), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, FLOP:%lu, duration:%.1f ms, mean:%.1f GFLOPS, stdev=%.1f GFLOPS\n",
                    dev, workgroupSize, numWorkgroups, numExperiments, totalFlops, eventMs, mean, stdev);
         }
-
+        
         /* MFMA-F64 */
         numExperiments = DEFAULT_NUM_EXPERIMENTS;
         currBenchmark++;
-        archs_t mfma_f64_unsupported{"gfx908"};
-        if (mfma_f64_unsupported.contains(gcnArch))
+        totalFlops = (uint64_t)numWorkgroups * SIMDS_PER_CU * numIters * MFMA_F64_OPS;
+        if (auto search = unsupported_datatypes.find("MFMA-F64"); search != unsupported_datatypes.end())
         {
             totalFlops = 0;
             samples[0] = 0;
@@ -900,7 +1083,6 @@ int main(int argc, char **argv)
         }
         else
         {
-            totalFlops = (uint64_t)numWorkgroups * SIMDS_PER_CU * numIters * MFMA_F64_OPS;
             for (int n = 0; n < numExperiments; n++)
             {
 
@@ -938,33 +1120,18 @@ int main(int argc, char **argv)
         /* MFMA-I8 */
         numExperiments = DEFAULT_NUM_EXPERIMENTS;
         currBenchmark++;
-        archs_t mfma_i8_unsupported{"gfx940", "gfx941", "gfx942"};
-        if (mfma_i8_unsupported.contains(gcnArch))
+        totalFlops = (uint64_t)numWorkgroups * SIMDS_PER_CU * numIters * MFMA_I8_OPS;
+        for (int n = 0; n < numExperiments; n++)
         {
-            totalFlops = 0;
-            samples[0] = 0;
-            numExperiments = 1;
-            eventMs = 0;
+
+            initHipEvents(start, stop);
+            hipLaunchKernelGGL(mfma_i8, dim3(numWorkgroups), dim3(workgroupSize), 0, 0, numIters, dummy);
+            stopHipEvents(eventMs, start, stop);
+
+            samples[n] = totalFlops / eventMs / 1e6;
             if (!quiet)
             {
-                showProgress(1);
-            }
-        }
-        else
-        {
-            totalFlops = (uint64_t)numWorkgroups * SIMDS_PER_CU * numIters * MFMA_I8_OPS;
-            for (int n = 0; n < numExperiments; n++)
-            {
-
-                initHipEvents(start, stop);
-                hipLaunchKernelGGL(mfma_i8, dim3(numWorkgroups), dim3(workgroupSize), 0, 0, numIters, dummy);
-                stopHipEvents(eventMs, start, stop);
-
-                samples[n] = totalFlops / eventMs / 1e6;
-                if (!quiet)
-                {
-                    showProgress((float)n / numExperiments);
-                }
+                showProgress((float)n / numExperiments);
             }
         }
 

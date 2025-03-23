@@ -43,12 +43,17 @@ struct arch_size_specs {
 };
 
 enum {
-    MFMA_F8_OPS   = 32768,
-    MFMA_BF16_OPS = 16384,
+    MFMA_F8_OPS = 32768,
     MFMA_F16_OPS  = 16384,
     MFMA_F32_OPS  = 4096,
     MFMA_F64_OPS  = 2048,
+#if AMDGPU_TARGET == GFX90A
     MFMA_I8_OPS   = 16384,
+    MFMA_BF16_OPS = 8192,
+#else
+    MFMA_I8_OPS   = 32768,
+    MFMA_BF16_OPS = 16384,
+#endif
 };
 
 const int SIMDS_PER_CU = 4;
