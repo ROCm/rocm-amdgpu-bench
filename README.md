@@ -12,8 +12,12 @@ utility directly measures performance for a variety of micro-benchmarks includin
 * L1 Bandwidth
 * LDS Bandwidth
 * Peak FLOPs (FP8)
+* Peak FLOPs (FP16)
 * Peak FLOPs (FP32)
 * Peak FLOPs (FP64)
+* Peak FLOPs (I8)
+* Peak FLOPs (I32)
+* Peak FLOPs (I64)
 * Peak MFMA FLOPs (F8)
 * Peak MFMA FLOPs (BF16)
 * Peak MFMA FLOPs (F16)
