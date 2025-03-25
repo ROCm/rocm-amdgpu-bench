@@ -63,6 +63,8 @@ jobs:
             ROCM_VERSN=$(( (${ROCM_MAJOR}*10000)+(${ROCM_MINOR}*100) ))
             if [ "${OS_VERSION_MAJOR}" -eq 8 ]; then PERL_REPO=powertools; else PERL_REPO=crb; fi && \
             dnf -y --enablerepo=${PERL_REPO} install perl-File-BaseDir
+            python3 -m pip install --upgrade pip
+            python3 -m pip install 'cmake==3.22'
             yum install -y https://repo.radeon.com/amdgpu-install/${{ matrix.rocm-version }}/rhel/${{ matrix.os-release }}/amdgpu-install-${ROCM_MAJOR}.${ROCM_MINOR}.${ROCM_VERSN}-1${RPM_TAG}.noarch.rpm
             yum install -y rocm-dev rocm-smi-lib rocprofiler-dev
       
@@ -82,14 +84,14 @@ jobs:
           path: build/roofline/roofline-rhel${{ env.OS_VERSION_MAJOR }}-mi300-rocm${{ env.ROCM_MAJOR }}
 
   build-ubuntu:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     container:
       image: dgaliffiamd/rocprofiler-systems:ci-base-ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
         rocm-version: ['6.3']
-        os-release: ['20.04']
+        os-release: ['22.04']
         compiler: ['g++-11']
     steps:
       - name: Checkout the repo
@@ -143,7 +145,7 @@ jobs:
           path: build/roofline/roofline-ubuntu${{ env.OS_VERSION_MAJOR }}_${{ env.OS_VERSION_MINOR }}-mi300-rocm${{ env.ROCM_MAJOR }}
 
   build-sles:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     container:
       image: dgaliffiamd/rocprofiler-systems:ci-base-opensuse-${{ matrix.os-release }}
     strategy:
@@ -180,6 +182,8 @@ jobs:
           shell: bash
           command: |
             zypper addrepo  https://download.opensuse.org/repositories/devel:languages:perl/${{ matrix.os-release }}/devel:languages:perl.repo
+            python3 -m pip install --upgrade pip
+            python3 -m pip install 'cmake==3.22'
             zypper --non-interactive --no-gpg-checks install -y kernel-default-devel
             zypper --non-interactive --no-gpg-checks install -y https://repo.radeon.com/amdgpu-install/${{ matrix.rocm-version }}/sle/${{ matrix.os-release }}/amdgpu-install-${{ env.ROCM_MAJOR }}.${{ env.ROCM_MINOR }}.60300-1.noarch.rpm
             zypper --non-interactive --no-gpg-checks refresh
