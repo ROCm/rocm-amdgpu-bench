@@ -10,6 +10,15 @@ name: generate_binaries
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - '*.md'
+      - 'VERSION'
+  pull_request:
+    branches: [ main ]
+    paths-ignore:
+      - '*.md'
+      - 'VERSION'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -19,12 +28,12 @@ jobs:
   build-rhel:
     runs-on: ubuntu-latest
     container:
-      image: colramos/omniperf:ci-base-rhel-${{ matrix.os-release }}
+      image: dgaliffiamd/rocprofiler-systems:ci-base-rhel-${{ matrix.os-release }}
     strategy:
       fail-fast: false
       matrix:
-        rocm-version: ['5.7', '6.0']
-        os-release: ['8.8']
+        rocm-version: ['6.3']
+        os-release: ['8.10']
         compiler: ['g++']
     steps:
       - name: Checkout the repo
@@ -54,33 +63,36 @@ jobs:
             ROCM_VERSN=$(( (${ROCM_MAJOR}*10000)+(${ROCM_MINOR}*100) ))
             if [ "${OS_VERSION_MAJOR}" -eq 8 ]; then PERL_REPO=powertools; else PERL_REPO=crb; fi && \
             dnf -y --enablerepo=${PERL_REPO} install perl-File-BaseDir
+            python3 -m pip install --upgrade pip
+            python3 -m pip install 'cmake==3.22'
             yum install -y https://repo.radeon.com/amdgpu-install/${{ matrix.rocm-version }}/rhel/${{ matrix.os-release }}/amdgpu-install-${ROCM_MAJOR}.${ROCM_MINOR}.${ROCM_VERSN}-1${RPM_TAG}.noarch.rpm
             yum install -y rocm-dev rocm-smi-lib rocprofiler-dev
       
       - name: Create roofline binary
         run:
+          git config --global --add safe.directory ${PWD} &&
           export PATH=/opt/rocm/bin:$PATH &&
           mkdir -p build && cd build &&
           cmake .. &&
           make -j &&
-          mv roofline/roofline roofline/roofline-rhel${{ env.OS_VERSION_MAJOR }}-mi200-rocm${{ env.ROCM_MAJOR }}
+          mv roofline roofline-rhel${{ env.OS_VERSION_MAJOR }}-mi300-rocm${{ env.ROCM_MAJOR }}
 
       - name: Cache rhel binary
         uses: actions/upload-artifact@v4
         with:
           name: rhel-binary-rocm${{ env.ROCM_MAJOR }}
-          path: build/roofline/roofline-rhel${{ env.OS_VERSION_MAJOR }}-mi200-rocm${{ env.ROCM_MAJOR }}
+          path: build/roofline/roofline-rhel${{ env.OS_VERSION_MAJOR }}-mi300-rocm${{ env.ROCM_MAJOR }}
 
   build-ubuntu:
     runs-on: ubuntu-latest
     container:
-      image: colramos/omniperf:ci-base-ubuntu-${{ matrix.os-release }}
+      image: dgaliffiamd/rocprofiler-systems:ci-base-ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
-        rocm-version: ['5.7', '6.0']
-        os-release: ['20.04']
-        compiler: ['g++']
+        rocm-version: ['6.3']
+        os-release: ['22.04']
+        compiler: ['g++-11']
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
@@ -91,7 +103,6 @@ jobs:
 
       - name: Configure Env
         run:
-          echo "ROCM_VERSION=${{ matrix.rocm-version }}" >> $GITHUB_ENV &&
           echo "ROCM_MAJOR=$(echo '${{ matrix.rocm-version }}' | sed 's/\./ /g' | awk '{print $1}')" >> $GITHUB_ENV &&
           echo "OS_VERSION_MAJOR=$(cat /etc/os-release | grep 'VERSION_ID' | sed 's/=/ /1' | awk '{print $NF}' | sed 's/"//g' | sed 's/\./ /g' | awk '{print $1}')" >> $GITHUB_ENV &&
           echo "OS_VERSION_MINOR=$(cat /etc/os-release | grep 'VERSION_ID' | sed 's/=/ /1' | awk '{print $NF}' | sed 's/"//g' | sed 's/\./ /g' | awk '{print $2}')" >> $GITHUB_ENV
@@ -105,10 +116,14 @@ jobs:
           max_attempts: 5
           shell: bash
           command: |
+            ROCM_VERSION=${{ matrix.rocm-version }}
+            ROCM_MAJOR=$(echo ${ROCM_VERSION} | sed 's/\./ /g' | awk '{print $1}')
+            ROCM_MINOR=$(echo ${ROCM_VERSION} | sed 's/\./ /g' | awk '{print $2}')
+            ROCM_VERSN=$(( (${ROCM_MAJOR}*10000)+(${ROCM_MINOR}*100) ))
             apt-get update &&
             apt-get install -y software-properties-common wget gnupg2 &&
-            wget -q -O - https://repo.radeon.com/rocm/rocm.gpg.key | apt-key add - &&
-            echo "deb [arch=amd64] https://repo.radeon.com/rocm/apt/${{ matrix.rocm-version }}/ ubuntu main" | tee /etc/apt/sources.list.d/rocm.list &&
+            wget -q https://repo.radeon.com/amdgpu-install/${{ matrix.rocm-version }}/ubuntu/jammy/amdgpu-install_${ROCM_MAJOR}.${ROCM_MINOR}.${ROCM_VERSN}-1_all.deb
+            apt-get install -y ./amdgpu-install_${ROCM_MAJOR}.${ROCM_MINOR}.${ROCM_VERSN}-1_all.deb
             apt-get update &&
             apt-get install -y build-essential libtool python3-pip clang libomp-dev ${{ matrix.compiler }} rocm-dev rocm-utils rocm-smi-lib rocprofiler-dev rccl-dev hip-base curl &&
             apt-get -y --purge autoremove &&
@@ -116,26 +131,27 @@ jobs:
 
       - name: Create roofline binary
         run:
+          git config --global --add safe.directory ${PWD} &&
           export PATH=/opt/rocm/bin:$PATH &&
           mkdir -p build && cd build &&
           cmake .. &&
           make -j &&
-          mv roofline/roofline roofline/roofline-ubuntu${{ env.OS_VERSION_MAJOR }}_${{ env.OS_VERSION_MINOR }}-mi200-rocm${{ env.ROCM_MAJOR }}
+          mv roofline roofline-ubuntu${{ env.OS_VERSION_MAJOR }}_${{ env.OS_VERSION_MINOR }}-mi300-rocm${{ env.ROCM_MAJOR }}
 
       - name: Cache ubuntu binary
         uses: actions/upload-artifact@v4
         with:
           name: ubuntu-binary-rocm${{ env.ROCM_MAJOR }}
-          path: build/roofline/roofline-ubuntu${{ env.OS_VERSION_MAJOR }}_${{ env.OS_VERSION_MINOR }}-mi200-rocm${{ env.ROCM_MAJOR }}
+          path: build/roofline/roofline-ubuntu${{ env.OS_VERSION_MAJOR }}_${{ env.OS_VERSION_MINOR }}-mi300-rocm${{ env.ROCM_MAJOR }}
 
   build-sles:
     runs-on: ubuntu-latest
     container:
-      image: colramos/omniperf:ci-base-opensuse-${{ matrix.os-release }}
+      image: dgaliffiamd/rocprofiler-systems:ci-base-opensuse-${{ matrix.os-release }}
     strategy:
       fail-fast: false
       matrix:
-        rocm-version: ['5.7', '6.0']
+        rocm-version: ['6.3']
         os-release: ['15.5']
         compiler: ['g++']
     steps:
@@ -150,9 +166,12 @@ jobs:
         run:
           echo "ROCM_VERSION=${{ matrix.rocm-version }}" >> $GITHUB_ENV &&
           echo "ROCM_MAJOR=$(echo '${{ matrix.rocm-version }}' | sed 's/\./ /g' | awk '{print $1}')" >> $GITHUB_ENV &&
+          echo "ROCM_MINOR=$(echo '${{ matrix.rocm-version }}' | sed 's/\./ /g' | awk '{print $2}')" >> $GITHUB_ENV &&
           echo "OS_VERSION_MAJOR=$(cat /etc/os-release | grep 'VERSION_ID' | sed 's/=/ /1' | awk '{print $NF}' | sed 's/"//g' | sed 's/\./ /g' | awk '{print $1}')" >> $GITHUB_ENV &&
-          echo "OS_VERSION_MINOR=$(cat /etc/os-release | grep 'VERSION_ID' | sed 's/=/ /1' | awk '{print $NF}' | sed 's/"//g' | sed 's/\./ /g' | awk '{print $2}')" >> $GITHUB_ENV
-      
+          echo "OS_VERSION_MINOR=$(cat /etc/os-release | grep 'VERSION_ID' | sed 's/=/ /1' | awk '{print $NF}' | sed 's/"//g' | sed 's/\./ /g' | awk '{print $2}')" >> $GITHUB_ENV &&
+          echo "CC=$(echo '${{ matrix.compiler }}' | sed 's/+/c/g')" >> $GITHUB_ENV &&
+          echo "CXX=${{ matrix.compiler }}" >> $GITHUB_ENV
+
       - name: Install packages
         timeout-minutes: 25
         uses: nick-fields/retry@v3
@@ -162,60 +181,60 @@ jobs:
           max_attempts: 5
           shell: bash
           command: |
-            ROCM_MINOR=$(echo ${{ env.ROCM_VERSION }} | sed 's/\./ /g' | awk '{print $2}')
-            ROCM_VERSN=$(( (${ROCM_MAJOR}*10000)+(${ROCM_MINOR}*100) ))
-            zypper addrepo  https://download.opensuse.org/repositories/devel:languages:perl/SLE_${{ env.OS_VERSION_MAJOR }}_SP5/devel:languages:perl.repo
+            zypper addrepo  https://download.opensuse.org/repositories/devel:languages:perl/${{ matrix.os-release }}/devel:languages:perl.repo
+            python3 -m pip install --upgrade pip
+            python3 -m pip install 'cmake==3.22'
             zypper --non-interactive --no-gpg-checks install -y kernel-default-devel
-            zypper --non-interactive --no-gpg-checks install -y https://repo.radeon.com/amdgpu-install/${{ matrix.rocm-version }}/sle/${{ matrix.os-release }}/amdgpu-install-${ROCM_MAJOR}.${ROCM_MINOR}.${ROCM_VERSN}-1.noarch.rpm
+            zypper --non-interactive --no-gpg-checks install -y https://repo.radeon.com/amdgpu-install/${{ matrix.rocm-version }}/sle/${{ matrix.os-release }}/amdgpu-install-${{ env.ROCM_MAJOR }}.${{ env.ROCM_MINOR }}.60300-1.noarch.rpm
             zypper --non-interactive --no-gpg-checks refresh
-            zypper --non-interactive --no-gpg-checks install -y rocm-dev rocm-smi-lib rocprofiler-dev
+            zypper --non-interactive --no-gpg-checks install -y rocm-dev amd-smi-lib rocprofiler-dev
       
       - name: Create roofline binary
         run:
+          git config --global --add safe.directory ${PWD} &&
           export PATH=/opt/rocm/bin:$PATH &&
           mkdir -p build && cd build &&
           cmake .. &&
           make -j &&
-          mv roofline/roofline roofline/roofline-sles${{ env.OS_VERSION_MAJOR }}sp${{ env.OS_VERSION_MINOR }}-mi200-rocm${{ env.ROCM_MAJOR }}
+          mv roofline roofline-sles${{ env.OS_VERSION_MAJOR }}sp${{ env.OS_VERSION_MINOR }}-mi300-rocm${{ env.ROCM_MAJOR }}
 
       - name: Cache sles binary
         uses: actions/upload-artifact@v4
         with:
           name: sles-binary-rocm${{ env.ROCM_MAJOR }}
-          path: build/roofline/roofline-sles${{ env.OS_VERSION_MAJOR }}sp${{ env.OS_VERSION_MINOR }}-mi200-rocm${{ env.ROCM_MAJOR }}
+          path: build/roofline-sles${{ env.OS_VERSION_MAJOR }}sp${{ env.OS_VERSION_MINOR }}-mi300-rocm${{ env.ROCM_MAJOR }}
 
+  # push-to-omniperf:
+  #   needs:
+  #     - build-sles
+  #     - build-ubuntu
+  #     - build-rhel
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Download artifacts
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         path: roofline/output/
+  #         merge-multiple: 'true'
 
-  push-to-omniperf:
-    needs:
-      - build-sles
-      - build-ubuntu
-      - build-rhel
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: roofline/output/
-          merge-multiple: 'true'
+  #     - name: Give executable permissions
+  #       run:
+  #         chmod +x roofline/output/roofline-*
 
-      - name: Give executable permissions
-        run:
-          chmod +x roofline/output/roofline-*
+  #     - name: Verify artifact downloads
+  #       run:
+  #         ls roofline/output/
 
-      - name: Verify artifact downloads
-        run:
-          ls roofline/output/
-
-      - name: Upload artifacts to Omniperf
-        uses: cpina/github-action-push-to-another-repository@v1.7.2
-        env:
-          SSH_DEPLOY_KEY: ${{ secrets.SSH_DEPLOY_KEY }}
-          ACTOR_EMAIL: "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
-        with:
-          source-directory: 'roofline/output/'
-          destination-github-username: 'ROCm'
-          destination-repository-name: 'omniperf'
-          user-email: "$ACTOR_EMAIL"
-          user-name: "${{ github.actor }}"
-          target-directory: 'src/utils/rooflines/'
-          target-branch: dev
+  #     - name: Upload artifacts to Omniperf
+  #       uses: cpina/github-action-push-to-another-repository@v1.7.2
+  #       env:
+  #         SSH_DEPLOY_KEY: ${{ secrets.SSH_DEPLOY_KEY }}
+  #         ACTOR_EMAIL: "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+  #       with:
+  #         source-directory: 'roofline/output/'
+  #         destination-github-username: 'ROCm'
+  #         destination-repository-name: 'omniperf'
+  #         user-email: "$ACTOR_EMAIL"
+  #         user-name: "${{ github.actor }}"
+  #         target-directory: 'src/utils/rooflines/'
+  #         target-branch: dev
