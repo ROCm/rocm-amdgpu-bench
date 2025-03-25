@@ -81,7 +81,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: rhel-binary-rocm${{ env.ROCM_MAJOR }}
-          path: build/roofline/roofline-rhel${{ env.OS_VERSION_MAJOR }}-mi300-rocm${{ env.ROCM_MAJOR }}
+          path: build/roofline-rhel${{ env.OS_VERSION_MAJOR }}-mi300-rocm${{ env.ROCM_MAJOR }}
 
   build-ubuntu:
     runs-on: ubuntu-latest
@@ -142,7 +142,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ubuntu-binary-rocm${{ env.ROCM_MAJOR }}
-          path: build/roofline/roofline-ubuntu${{ env.OS_VERSION_MAJOR }}_${{ env.OS_VERSION_MINOR }}-mi300-rocm${{ env.ROCM_MAJOR }}
+          path: build/roofline-ubuntu${{ env.OS_VERSION_MAJOR }}_${{ env.OS_VERSION_MINOR }}-mi300-rocm${{ env.ROCM_MAJOR }}
 
   build-sles:
     runs-on: ubuntu-latest
