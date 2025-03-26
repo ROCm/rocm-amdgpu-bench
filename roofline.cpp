@@ -223,7 +223,8 @@ int main(int argc, char **argv)
     ofile.open(csvFile);
     ofile << "device,HBMBw,HBMBwLow,hbmBwHigh,MALLBw,MALLBwLow,MALLBwHigh,";
     ofile << "L2Bw,L2BwLow,L2BwHigh,L1Bw,L1BwLow,L1BwHigh,LDSBw,LDSBwLow,LDSBwHigh,";
-    ofile << "FP8Flops,FP8FlopsLow,FP8FlopsHigh,FP16Flops,FP16FlopsLow,FP16FlopsHigh,";
+    ofile << "FP8Flops,FP8FlopsLow,FP8FlopsHigh,";
+    ofile << "FP16Flops,FP16FlopsLow,FP16FlopsHigh,BF16Flops,BF16FlopsLow,BF16FlopsHigh,";
     ofile << "FP32Flops,FP32FlopsLow,FP32FlopsHigh,FP64Flops,FP64FlopsLow,FP64FlopsHigh,";
     ofile << "I8Ops,I8OpsLow,I8OpsHigh,";
     ofile << "I32Ops,I32OpsLow,I32OpsHigh,";
