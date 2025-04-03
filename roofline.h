@@ -43,6 +43,7 @@ struct arch_size_specs {
 };
 
 enum {
+    MFMA_F4F6_OPS = 32768, //confirm
     MFMA_F8_OPS = 32768,
     MFMA_F16_OPS  = 16384,
     MFMA_F32_OPS  = 4096,

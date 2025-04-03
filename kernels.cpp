@@ -94,6 +94,29 @@ __global__ void mfma_i8(int iter, float *dummy)
     }
 }
 
+__global__ void mfma_f4f6(int iter, float *dummy)
+{
+// MI350 series only
+#if defined(__gfx950__)
+    // Input: 2 F32 registers
+    // builtin mfma expects double input
+    double a =  threadIdx.x;
+
+    // Output: 16 F32 registers
+    f32_16vec result = {0};
+
+    // CDNA3: v_mfma_f32_32x32x16_fp8_fp8 ops: 32x32x16x2 = 32768
+    for(int i = 0; i < iter; ++i)
+    {
+        result = __builtin_amdgcn_mfma_f32_32x32x16_fp8_fp8(a, a, result, 0, 0, 0);
+    }
+
+    if (result[0] != 2*result[0])
+    {
+        dummy[0] = result[0];
+    }
+#endif
+}
 
 __global__ void mfma_f8(int iter, float *dummy)
 {

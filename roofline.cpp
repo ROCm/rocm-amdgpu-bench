@@ -185,11 +185,12 @@ int main(int argc, char **argv)
 
     /* supported_archs_unsupported_dt indicates supported archs and the corrseponding datatypes which ARE NOT supported by each arch */
     archs_t supported_archs_unsupported_dt = {
-        {"gfx908", {"MALL", "FP8", "FP16", "MFMA-F8", "MFMA-F64"}}, // MI100 series
-        {"gfx90a", {"MALL", "FP8", "MFMA-F8"}},             // MI200 series
-        {"gfx940", {}}, // MI300A_A0
-        {"gfx941", {}}, // MI300X_A0
-        {"gfx942", {}}, // MI300A_A1, MI300X_A1
+        {"gfx908", {"MALL", "FP8", "FP16", "MFMA-F4F6", "MFMA-F8", "MFMA-F64"}}, // MI100 series
+        {"gfx90a", {"MALL", "FP8", "MFMA-F4F6", "MFMA-F8"}},             // MI200 series
+        {"gfx940", {"MFMA-F4F6"}}, // MI300A_A0
+        {"gfx941", {"MFMA-F4F6"}}, // MI300X_A0
+        {"gfx942", {"MFMA-F4F6"}}, // MI300A_A1, MI300X_A1
+        {"gfx950", {}}, // MI350
     };
 
     if ((devID >= 0) && (devID < numGpuDevices))
@@ -229,6 +230,7 @@ int main(int argc, char **argv)
     ofile << "I8Ops,I8OpsLow,I8OpsHigh,";
     ofile << "I32Ops,I32OpsLow,I32OpsHigh,";
     ofile << "I64Ops,I64OpsLow,I64OpsHigh,";
+    ofile << "MFMAF4F6Flops,MFMAF4F6FlopsLow,MFMAF4F6FlopsHigh,";
     ofile << "MFMAF8Flops,MFMAF8FlopsLow,MFMAF8FlopsHigh,";
     ofile << "MFMAF16Flops,MFMAF16FlopsLow,MFMAF16FlopsHigh,";
     ofile << "MFMABF16Flops,MFMABF16FlopsLow,MFMABF16FlopsHigh,";
@@ -947,6 +949,56 @@ int main(int argc, char **argv)
         // warm up first use default setting
         numWorkgroups = 128 * arch_sizes[gcnArch].CUs;
         numIters = 2000;
+
+        /* MFMA-F4F6 */
+        numExperiments = DEFAULT_NUM_EXPERIMENTS;
+        currBenchmark++;
+        if (auto search = unsupported_datatypes.find("MFMA-F4F6"); search != unsupported_datatypes.end())
+        {
+            totalFlops = 0;
+            samples[0] = 0;
+            numExperiments = 1;
+            eventMs = 0;
+            if (!quiet)
+            {
+                showProgress(1);
+            }
+        }
+        else
+        {
+            totalFlops = (uint64_t)numWorkgroups * SIMDS_PER_CU * numIters * MFMA_F4F6_OPS;
+            for (int n = 0; n < numExperiments; n++)
+            {
+
+                initHipEvents(start, stop);
+                hipLaunchKernelGGL(mfma_f4f6, dim3(numWorkgroups), dim3(workgroupSize), 0, 0, numIters, dummy);
+                stopHipEvents(eventMs, start, stop);
+
+                samples[n] = totalFlops / eventMs / 1e6;
+                if (!quiet)
+                {
+                    showProgress((float)n / numExperiments);
+                }
+            }
+        }
+        stats(samples, numExperiments, &mean, &stdev, &confidence);
+
+        perf_metrics.push_back(mean);
+        perf_metrics.push_back(mean - confidence);
+        perf_metrics.push_back(mean + confidence);
+
+        if (quiet)
+        {
+
+            statsMap[dev]["Peak MFMA FLOPs (F4F6)"]["mean"] = mean;
+            statsMap[dev]["Peak MFMA FLOPs (F4F6)"]["stdev"] = stdev;
+            showProgress(((float)dev + currBenchmark / numBenchmarks) / numGpuDevices);
+        }
+        else
+        {
+            printf("\nPeak MFMA FLOPs (F4F6), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, FLOP:%lu, duration:%.1f ms, mean:%.1f GFLOPS, stdev=%.1f GFLOPS\n",
+                dev, workgroupSize, numWorkgroups, numExperiments, totalFlops, eventMs, mean, stdev);
+        }
 
         /* MFMA-F8 */
         numExperiments = DEFAULT_NUM_EXPERIMENTS;
