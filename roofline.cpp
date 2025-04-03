@@ -52,6 +52,7 @@ int main(int argc, char **argv)
     arch_sizes["gfx940"] = arch_size_specs{32 * 1024, 4 * 1024 * 1024, 64 * 1024 * 1024, 64 * 1024, 228}; // MI300A
     arch_sizes["gfx941"] = arch_size_specs{32 * 1024, 4 * 1024 * 1024, 64 * 1024 * 1024, 64 * 1024, 304}; // MI300X A0
     arch_sizes["gfx942"] = arch_size_specs{32 * 1024, 4 * 1024 * 1024, 64 * 1024 * 1024, 64 * 1024, 304}; // MI300X
+    arch_sizes["gfx950"] = arch_size_specs{32 * 1024, 4 * 1024 * 1024, 64 * 1024 * 1024, 64 * 1024, 256}; // MI355
 
     using cache_bw_kernel_t = decltype(Cache_bw<float, 1, 1>);
     using cache_bw_kernel_selector_t = std::unordered_map<std::string, cache_bw_kernel_t *>;
@@ -62,6 +63,7 @@ int main(int argc, char **argv)
     L1_bw_kernel_selector["gfx940"] = Cache_bw<float, 32 * 1024, 256>;
     L1_bw_kernel_selector["gfx941"] = Cache_bw<float, 32 * 1024, 256>;
     L1_bw_kernel_selector["gfx942"] = Cache_bw<float, 32 * 1024, 256>;
+    L1_bw_kernel_selector["gfx950"] = Cache_bw<float, 32 * 1024, 256>;
 
     cache_bw_kernel_selector_t L2_bw_kernel_selector;
     L2_bw_kernel_selector["gfx908"] = Cache_bw<float, 8 * 1024 * 1024, 256>;
@@ -69,11 +71,13 @@ int main(int argc, char **argv)
     L2_bw_kernel_selector["gfx940"] = Cache_bw<float, 4 * 1024 * 1024, 256>;
     L2_bw_kernel_selector["gfx941"] = Cache_bw<float, 4 * 1024 * 1024, 256>;
     L2_bw_kernel_selector["gfx942"] = Cache_bw<float, 4 * 1024 * 1024, 256>;
+    L2_bw_kernel_selector["gfx950"] = Cache_bw<float, 4 * 1024 * 1024, 256>;
 
     cache_bw_kernel_selector_t MALL_bw_kernel_selector;
     MALL_bw_kernel_selector["gfx940"] = Cache_bw<float, 64 * 1024 * 1024, 256>;
     MALL_bw_kernel_selector["gfx941"] = Cache_bw<float, 64 * 1024 * 1024, 256>;
     MALL_bw_kernel_selector["gfx942"] = Cache_bw<float, 64 * 1024 * 1024, 256>;
+    MALL_bw_kernel_selector["gfx950"] = Cache_bw<float, 64 * 1024 * 1024, 256>;
 
     hipDeviceProp_t props;
     float eventMs;
@@ -189,7 +193,8 @@ int main(int argc, char **argv)
         {"gfx90a", {"MALL", "FP8", "MFMA-F8"}},             // MI200 series
         {"gfx940", {}}, // MI300A_A0
         {"gfx941", {}}, // MI300X_A0
-        {"gfx942", {}}, // MI300A_A1, MI300X_A1
+        {"gfx942", {}}, // MI300A_A1, MI300X_A1, MI308
+        {"gfx950", {}}, // MI350, MI355
     };
 
     if ((devID >= 0) && (devID < numGpuDevices))

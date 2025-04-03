@@ -22,7 +22,7 @@ string(REGEX REPLACE "([0-9]+)\.([0-9]+)\.([0-9]+)(.*)" "\\1.\\2.\\3" ROOFLINE_V
 
 # Set preferred compiler and supported targets
 set(CMAKE_HIP_COMPILER "amdclang++" CACHE STRING "desired c++ compiler" FORCE)
-set(CMAKE_HIP_ARCHITECTURES "gfx908;gfx90a;gfx940;gfx941;gfx942" CACHE STRING "AMD GPU architectures" FORCE)
+set(CMAKE_HIP_ARCHITECTURES "gfx908;gfx90a;gfx940;gfx941;gfx942;gfx950" CACHE STRING "AMD GPU architectures" FORCE)
 
 # CMake modules
 list(APPEND CMAKE_MODULE_PATH ${ROCM_LIB}/cmake/hip ${ROCM_PATH}/lib/cmake/hip /opt/rocm/lib/cmake/hip /opt/rocm/hip/cmake)

@@ -97,8 +97,8 @@ __global__ void mfma_i8(int iter, float *dummy)
 
 __global__ void mfma_f8(int iter, float *dummy)
 {
-// MI300 series only - note gfx940/gfx941/gfx942 uses fnuz f8
-#if defined(__gfx940__) or defined(__gfx941__) or defined(__gfx942__)
+// MI300 series only - note gfx940/gfx941/gfx942 only uses fnuz f8
+#if defined(__gfx940__) or defined(__gfx941__) or defined(__gfx942__) or defined(__gfx950__)
     // Input: 2 F32 registers
     // builtin mfma expects double input
     double a =  threadIdx.x;
