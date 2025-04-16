@@ -32,7 +32,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rocm-version: ['6.3']
+        rocm-version: ['6.4']
         os-release: ['8.10']
         compiler: ['g++']
     steps:
@@ -90,7 +90,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rocm-version: ['6.3']
+        rocm-version: ['6.4']
         os-release: ['22.04']
         compiler: ['g++-11']
     steps:
@@ -151,8 +151,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rocm-version: ['6.3']
-        os-release: ['15.5']
+        rocm-version: ['6.4']
+        os-release: ['15.6']
         compiler: ['g++']
     steps:
       - name: Checkout the repo
@@ -185,7 +185,7 @@ jobs:
             python3 -m pip install --upgrade pip
             python3 -m pip install 'cmake==3.22'
             zypper --non-interactive --no-gpg-checks install -y kernel-default-devel
-            zypper --non-interactive --no-gpg-checks install -y https://repo.radeon.com/amdgpu-install/${{ matrix.rocm-version }}/sle/${{ matrix.os-release }}/amdgpu-install-${{ env.ROCM_MAJOR }}.${{ env.ROCM_MINOR }}.60300-1.noarch.rpm
+            zypper --non-interactive --no-gpg-checks install -y https://repo.radeon.com/amdgpu-install/${{ matrix.rocm-version }}/sle/${{ matrix.os-release }}/amdgpu-install-${{ env.ROCM_MAJOR }}.${{ env.ROCM_MINOR }}.${{ env.ROCM_MAJOR }}0${{ env.ROCM_MINOR }}00-1.noarch.rpm
             zypper --non-interactive --no-gpg-checks refresh
             zypper --non-interactive --no-gpg-checks install -y rocm-dev amd-smi-lib rocprofiler-dev
       
