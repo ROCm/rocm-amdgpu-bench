@@ -66,7 +66,7 @@ __global__ void mfma_i8(int iter, float *dummy)
     int32_16vec result = {0};
 
 // MI100/MI200
-#if not defined(__gfx940__) and not defined(__gfx941__) and not defined(__gfx942__)
+#if defined(__gfx908__) or defined(__gfx90a__)
     // Input: 1 I32 register
     int a = threadIdx.x;
 
@@ -75,7 +75,7 @@ __global__ void mfma_i8(int iter, float *dummy)
     {
         result = __builtin_amdgcn_mfma_i32_32x32x8i8(a, a, result, 0, 0, 0);
     }
-// MI300
+// MI300 series
 #else
     // Input: 2 I32 registers
     // builting mfma expects I64 input
@@ -126,7 +126,7 @@ __global__ void mfma_bf16(int iter, float *dummy)
     f32_16vec result = {0};
 
 // MI100/MI200
-#if not defined(__gfx940__) and not defined(__gfx941__) and not defined(__gfx942__)
+#if defined(__gfx908__) or defined(__gfx90a__)
     // Input: 1 F32 register
     // builtin mfma expects 2 short registers
     bf16_2vec a;
@@ -137,7 +137,7 @@ __global__ void mfma_bf16(int iter, float *dummy)
     {
         result = __builtin_amdgcn_mfma_f32_32x32x4bf16(a, a, result, 0, 0, 0);
     }
-//MI300
+//MI300 series
 #else
     // Input: 2 F32 registers
     // builting mfma expects 4 short registers
@@ -207,6 +207,7 @@ __global__ void mfma_f32(int iter, float *dummy)
 
 __global__ void mfma_f64(int iter, float *dummy)
 {
+// MI200 and above
 #if not defined(__gfx908__)
     // Input: 1 F64 register
     double a =  threadIdx.x;
