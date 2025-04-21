@@ -854,7 +854,7 @@ int main(int argc, char **argv)
         }
         else
         {
-            printf("\nPeak IOPs (INT8), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, IOP:%lu, duration:%.1f ms, mean:%f.1 GOPS, stdev=%.1f GOPS\n",
+            printf("\nPeak IOPs (INT8), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, IOP:%lu, duration:%.1f ms, mean:%.1f GOPS, stdev=%.1f GOPS\n",
                    dev, workgroupSize, numWorkgroups, numExperiments, totalFlops, eventMs, mean, stdev);
         }
 
@@ -895,7 +895,7 @@ int main(int argc, char **argv)
         }
         else
         {
-            printf("\nPeak IOPs (INT32), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, IOP:%lu, duration:%.1f ms, mean:%f.1 GOPS, stdev=%.1f GOPS\n",
+            printf("\nPeak IOPs (INT32), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, IOP:%lu, duration:%.1f ms, mean:%.1f GOPS, stdev=%.1f GOPS\n",
                    dev, workgroupSize, numWorkgroups, numExperiments, totalFlops, eventMs, mean, stdev);
         }
 
@@ -936,7 +936,7 @@ int main(int argc, char **argv)
         }
         else
         {
-            printf("\nPeak IOPs (INT64), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, IOP:%lu, duration:%.1f ms, mean:%f.1 GOPS, stdev=%.1f GOPS\n",
+            printf("\nPeak IOPs (INT64), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, IOP:%lu, duration:%.1f ms, mean:%.1f GOPS, stdev=%.1f GOPS\n",
                    dev, workgroupSize, numWorkgroups, numExperiments, totalFlops, eventMs, mean, stdev);
         }
 
