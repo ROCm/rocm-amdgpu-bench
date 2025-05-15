@@ -99,10 +99,19 @@ __global__ void flops_benchmark(T *buf, uint32_t nSize)
 
 }
 
+enum MX_DATAFORMATS
+{
+    FP8,
+    BF8,
+    FP6,
+    BF6,
+    FP4
+};
 
 // declarations of non-templated kernels
 __global__ void LDS_bw(int numIter, float *dummy);
 __global__ void mfma_i8(int iter, float *dummy);
+__global__ void mfma_f8f6f4(int iter, float *dummy, MX_DATAFORMATS datatype);
 __global__ void mfma_f8(int iter, float *dummy);
 __global__ void mfma_bf16(int iter, float *dummy);
 __global__ void mfma_f16(int iter, float *dummy);

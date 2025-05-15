@@ -53,6 +53,7 @@ __global__ void LDS_bw(int numIter, float *dummy)
 
 
 using int32_16vec = __attribute__((__vector_size__(16 * sizeof(int)))) int;
+using int32_8vec = __attribute__((__vector_size__(8 * sizeof(int)))) int;
 using bf16_2vec = __attribute__((__vector_size__(1 * sizeof(__2i16))))  short;
 using bf16_4vec = __attribute__((__vector_size__(2 * sizeof(__2i16))))  short;
 using f32_16vec = __attribute__((__vector_size__(16 * sizeof(float)))) float;
@@ -94,6 +95,66 @@ __global__ void mfma_i8(int iter, float *dummy)
     }
 }
 
+
+/* Datatypes available for scale mfma f8f6f4 builtin
+* 0 = fp8
+* 1 = bf8
+* 2 = fp6
+* 3 = bf6
+* 4 = fp4
+*/
+__global__ void mfma_f8f6f4(int iter, float *dummy, MX_DATAFORMATS datatype)
+{
+// MI350 series only
+#if defined(__gfx950__)
+    // Input: 8 i32 registers
+    int32_8vec a;
+    a[0] = a[1] = a[2] = a[3] = a[4] = a[5] = a[6] = a[7] = threadIdx.x;
+
+    // Output: 16 F32 registers
+    f32_16vec result = {0};
+
+    // CDNA4: v_mfma_f32_32x32x64_f8f6f4    ops: 32x32x64x2 = 131072
+    switch (datatype)
+    {
+        case 1: // bf8 x bf8
+            for(int i = 0; i < iter; ++i)
+            {
+                result = __builtin_amdgcn_mfma_scale_f32_32x32x64_f8f6f4(a, a, result, 1, 1, 0, 0, 0, 0);
+            }
+            break;
+        case 2: // fp6 x fp6
+            for(int i = 0; i < iter; ++i)
+            {
+                result = __builtin_amdgcn_mfma_scale_f32_32x32x64_f8f6f4(a, a, result, 2, 2, 0, 0, 0, 0);
+            }
+            break;
+        case 3: // bf6 x bf6
+            for(int i = 0; i < iter; ++i)
+            {
+                result = __builtin_amdgcn_mfma_scale_f32_32x32x64_f8f6f4(a, a, result, 3, 3, 0, 0, 0, 0);
+            }
+            break;
+        case 4: // fp4 x fp4
+            for(int i = 0; i < iter; ++i)
+            {
+                result = __builtin_amdgcn_mfma_scale_f32_32x32x64_f8f6f4(a, a, result, 4, 4, 0, 0, 0, 0);
+            }
+            break;
+    default: // fp8 x fp8
+        for(int i = 0; i < iter; ++i)
+        {
+            result = __builtin_amdgcn_mfma_scale_f32_32x32x64_f8f6f4(a, a, result, 0, 0, 0, 0, 0, 0);
+        }
+        break;
+    }
+
+    if (result[0] != 2*result[0])
+    {
+        dummy[0] = result[0];
+    }
+#endif
+}
 
 __global__ void mfma_f8(int iter, float *dummy)
 {
