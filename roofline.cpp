@@ -49,9 +49,9 @@ int main(int argc, char **argv)
     //                                     L1         L2               MALL              LDS        #CUs
     arch_sizes["gfx908"] = arch_size_specs{16 * 1024, 8 * 1024 * 1024, 0, /*          */ 64 * 1024, 120}; // MI100
     arch_sizes["gfx90a"] = arch_size_specs{16 * 1024, 8 * 1024 * 1024, 0, /*          */ 64 * 1024, 104}; // MI200 per die
-    arch_sizes["gfx940"] = arch_size_specs{32 * 1024, 4 * 1024 * 1024, 64 * 1024 * 1024, 64 * 1024, 228}; // MI300A
-    arch_sizes["gfx941"] = arch_size_specs{32 * 1024, 4 * 1024 * 1024, 64 * 1024 * 1024, 64 * 1024, 304}; // MI300X A0
-    arch_sizes["gfx942"] = arch_size_specs{32 * 1024, 4 * 1024 * 1024, 64 * 1024 * 1024, 64 * 1024, 304}; // MI300X
+    arch_sizes["gfx940"] = arch_size_specs{32 * 1024, 4 * 1024 * 1024, 64 * 1024 * 1024, 64 * 1024, 228}; // MI300A A0 (Obsolete)
+    arch_sizes["gfx941"] = arch_size_specs{32 * 1024, 4 * 1024 * 1024, 64 * 1024 * 1024, 64 * 1024, 304}; // MI300X A0 (Obsolete)
+    arch_sizes["gfx942"] = arch_size_specs{32 * 1024, 4 * 1024 * 1024, 64 * 1024 * 1024, 64 * 1024, 304}; // MI300A/MI300X
     arch_sizes["gfx950"] = arch_size_specs{32 * 1024, 4 * 1024 * 1024, 64 * 1024 * 1024, 64 * 1024, 256}; // MI355
 
     using cache_bw_kernel_t = decltype(Cache_bw<float, 1, 1>);
