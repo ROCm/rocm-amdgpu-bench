@@ -28,7 +28,7 @@ THE SOFTWARE.
 const char ver[] = "v1.0";
 void help(void)
 {
-    printf("Usage: roofline [-d DEVIVCE] [-o csvfile.csv]\n");
+    printf("Usage: roofline [-d DEVICE] [-o csvfile.csv]\n");
     printf("Version: %s\n", ver);
     printf("\n\n optional arguments:\n");
     printf("\n -h, --help           Show this help message and exit\n");
@@ -79,7 +79,7 @@ void stats(float *samples, int entries, float *mean, float *stdev, float *confid
     mean[0] = mean_val;
     stdev[0] = stdev_val;
     confidence[0] = 1.960 * stdev_val / sqrtf(entries);
-    
+
 }
 
 std::string device_arch(int device_id){
