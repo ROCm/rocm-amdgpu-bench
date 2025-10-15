@@ -82,7 +82,7 @@ __global__ void flops_benchmark(T *buf, uint32_t nSize)
     const uint32_t maxOffset = nEntriesPerThread * nThreads;
 
     T *ptr;
-    const T y = (T) 1.0;
+    const T y = (T) 1.1;
 
     ptr = &buf[gid];
     T x = (T) 2.0;
