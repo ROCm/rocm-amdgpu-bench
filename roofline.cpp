@@ -34,7 +34,6 @@ THE SOFTWARE.
 #include <math.h>
 #include <map>
 
-#include <hip/hip_fp8.h>
 #include <hip/hip_bfloat16.h>
 #include <hip/hip_fp16.h>
 
@@ -188,8 +187,8 @@ int main(int argc, char **argv)
 
     /* supported_archs_unsupported_dt indicates supported archs and the corrseponding datatypes which ARE NOT supported by each arch */
     archs_t supported_archs_unsupported_dt = {
-        {"gfx908", {"MALL", "FP8", "FP16", "MFMA-F4", "MFMA-F6", "MFMA-F8", "MFMA-F64"}}, // MI100 series
-        {"gfx90a", {"MALL", "FP8", "MFMA-F4", "MFMA-F6", "MFMA-F8"}},             // MI200 series
+        {"gfx908", {"MALL", "FP16", "MFMA-F4", "MFMA-F6", "MFMA-F8", "MFMA-F64"}}, // MI100 series
+        {"gfx90a", {"MALL", "MFMA-F4", "MFMA-F6", "MFMA-F8"}},             // MI200 series
         {"gfx940", {"MFMA-F4", "MFMA-F6"}}, // MI300A_A0
         {"gfx941", {"MFMA-F4", "MFMA-F6"}}, // MI300X_A0
         {"gfx942", {"MFMA-F4", "MFMA-F6"}}, // MI300A_A1, MI300X_A1, MI308
@@ -227,7 +226,6 @@ int main(int argc, char **argv)
     ofile.open(csvFile);
     ofile << "device,HBMBw,HBMBwLow,hbmBwHigh,MALLBw,MALLBwLow,MALLBwHigh,";
     ofile << "L2Bw,L2BwLow,L2BwHigh,L1Bw,L1BwLow,L1BwHigh,LDSBw,LDSBwLow,LDSBwHigh,";
-    ofile << "FP8Flops,FP8FlopsLow,FP8FlopsHigh,";
     ofile << "FP16Flops,FP16FlopsLow,FP16FlopsHigh,BF16Flops,BF16FlopsLow,BF16FlopsHigh,";
     ofile << "FP32Flops,FP32FlopsLow,FP32FlopsHigh,FP64Flops,FP64FlopsLow,FP64FlopsHigh,";
     ofile << "I8Ops,I8OpsLow,I8OpsHigh,";
@@ -581,61 +579,6 @@ int main(int argc, char **argv)
         numWorkgroups = 128 * CUs;
 
         int numThreads = numWorkgroups * workgroupSize;
-
-        /* FP8 benchmark */
-        currBenchmark++;
-        if (auto search = unsupported_datatypes.find("FP8"); search != unsupported_datatypes.end())
-        {
-            totalFlops = 0;
-            samples[0] = 0;
-            numExperiments = 1;
-            eventMs = 0;
-            if (!quiet)
-            {
-                showProgress(1);
-            }
-        }
-        else
-        {
-            nSize = DEFAULT_DATASET_SIZE / sizeof(__hip_fp8_storage_t) / numThreads * numThreads;
-            hipLaunchKernelGGL((flops_benchmark<__hip_fp8_storage_t, 1024>), dim3(numWorkgroups), dim3(workgroupSize), 0, 0, (__hip_fp8_storage_t *)memBlock, nSize);
-            HIP_ASSERT(hipDeviceSynchronize());
-
-            totalFlops = (uint64_t)nSize * 1024 * 2;
-
-            for (int n = 0; n < numExperiments; n++)
-            {
-
-                initHipEvents(start, stop);
-                hipLaunchKernelGGL((flops_benchmark<__hip_fp8_storage_t, 1024>), dim3(numWorkgroups), dim3(workgroupSize), 0, 0, (__hip_fp8_storage_t *)memBlock, nSize);
-                stopHipEvents(eventMs, start, stop);
-
-                samples[n] = (float)totalFlops / eventMs / 1e6;
-                if (!quiet)
-                {
-                    showProgress((float)n / numExperiments);
-                }
-            }
-        }
-
-        stats(samples, numExperiments, &mean, &stdev, &confidence);
-
-        perf_metrics.push_back(mean);
-        perf_metrics.push_back(mean - confidence);
-        perf_metrics.push_back(mean + confidence);
-
-        if (quiet)
-        {
-
-            statsMap[dev]["Peak FLOPs (FP8)"]["mean"] = mean;
-            statsMap[dev]["Peak FLOPs (FP8)"]["stdev"] = stdev;
-            showProgress(((float)dev + currBenchmark / numBenchmarks) / numGpuDevices);
-        }
-        else
-        {
-            printf("\nPeak FLOPs (FP8), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, FLOP:%lu, duration:%.1f ms, mean:%.1f GFLOPS, stdev=%.1f GFLOPS\n",
-                   dev, workgroupSize, numWorkgroups, numExperiments, totalFlops, eventMs, mean, stdev);
-        }
 
         /* FP16 benchmark */
         numExperiments = DEFAULT_NUM_EXPERIMENTS;
