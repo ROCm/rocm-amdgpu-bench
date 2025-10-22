@@ -226,7 +226,7 @@ int main(int argc, char **argv)
     ofile.open(csvFile);
     ofile << "device,HBMBw,HBMBwLow,hbmBwHigh,MALLBw,MALLBwLow,MALLBwHigh,";
     ofile << "L2Bw,L2BwLow,L2BwHigh,L1Bw,L1BwLow,L1BwHigh,LDSBw,LDSBwLow,LDSBwHigh,";
-    ofile << "FP16Flops,FP16FlopsLow,FP16FlopsHigh,BF16Flops,BF16FlopsLow,BF16FlopsHigh,";
+    ofile << "FP16Flops,FP16FlopsLow,FP16FlopsHigh,";
     ofile << "FP32Flops,FP32FlopsLow,FP32FlopsHigh,FP64Flops,FP64FlopsLow,FP64FlopsHigh,";
     ofile << "I8Ops,I8OpsLow,I8OpsHigh,";
     ofile << "I32Ops,I32OpsLow,I32OpsHigh,";
@@ -633,48 +633,6 @@ int main(int argc, char **argv)
         else
         {
             printf("\nPeak FLOPs (FP16), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, FLOP:%lu, duration:%.1f ms, mean:%.1f GFLOPS, stdev=%.1f GFLOPS\n",
-                   dev, workgroupSize, numWorkgroups, numExperiments, totalFlops, eventMs, mean, stdev);
-        }
-
-        /* BF16 benchmark */
-        numExperiments = DEFAULT_NUM_EXPERIMENTS;
-        nSize = DEFAULT_DATASET_SIZE / sizeof(hip_bfloat16) / numThreads * numThreads;
-
-        hipLaunchKernelGGL((flops_benchmark<hip_bfloat16, 1024>), dim3(numWorkgroups), dim3(workgroupSize), 0, 0, (hip_bfloat16 *)memBlock, nSize);
-        HIP_ASSERT(hipDeviceSynchronize());
-
-        totalFlops = (uint64_t)nSize * 1024 * 2;
-        currBenchmark++;
-        for (int n = 0; n < numExperiments; n++)
-        {
-
-            initHipEvents(start, stop);
-            hipLaunchKernelGGL((flops_benchmark<hip_bfloat16, 1024>), dim3(numWorkgroups), dim3(workgroupSize), 0, 0, (hip_bfloat16 *)memBlock, nSize);
-            stopHipEvents(eventMs, start, stop);
-
-            samples[n] = (float)totalFlops / eventMs / 1e6;
-            if (!quiet)
-            {
-                showProgress((float)n / numExperiments);
-            }
-        }
-
-        stats(samples, numExperiments, &mean, &stdev, &confidence);
-
-        perf_metrics.push_back(mean);
-        perf_metrics.push_back(mean - confidence);
-        perf_metrics.push_back(mean + confidence);
-
-        if (quiet)
-        {
-
-            statsMap[dev]["Peak FLOPs (BF16)"]["mean"] = mean;
-            statsMap[dev]["Peak FLOPs (BF16)"]["stdev"] = stdev;
-            showProgress(((float)dev + currBenchmark / numBenchmarks) / numGpuDevices);
-        }
-        else
-        {
-            printf("\nPeak FLOPs (BF16), GPU ID: %d, workgroupSize:%d, workgroups:%d, experiments:%d, FLOP:%lu, duration:%.3f ms, mean:%.1f GFLOPS, stdev=%.1f GFLOPS\n",
                    dev, workgroupSize, numWorkgroups, numExperiments, totalFlops, eventMs, mean, stdev);
         }
 
