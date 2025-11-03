@@ -107,7 +107,7 @@ int main(int argc, char **argv)
     int datasetEntries = DEFAULT_DATASET_SIZE;
     int numIters = DEFAULT_NUM_ITERS;
     int numExperiments = DEFAULT_NUM_EXPERIMENTS;
-    int numExperiments_user_or_default = numExperiments;
+    int numExperimentsPerBenchmark = numExperiments;
     int numBenchmarks = 11;
     int verbose = 0;
     bool quiet = false;
@@ -150,7 +150,7 @@ int main(int argc, char **argv)
             break;
         case 'e':
             numExperiments = atoi(optarg);
-            numExperiments_user_or_default = numExperiments;
+            numExperimentsPerBenchmark = numExperiments;
             break;
         case 's':
             workgroupSize = atoi(optarg);
@@ -338,7 +338,7 @@ int main(int argc, char **argv)
          *
          * **********************************************/
 
-        numExperiments = numExperiments_user_or_default;
+        numExperiments = numExperimentsPerBenchmark;
         currBenchmark++;
         int cacheSize = arch_sizes[gcnArch].MALL_size;
         if (auto search = unsupported_datatypes.find("MALL"); search != unsupported_datatypes.end())
@@ -409,7 +409,7 @@ int main(int argc, char **argv)
          *
          * **********************************************/
 
-        numExperiments = numExperiments_user_or_default;
+        numExperiments = numExperimentsPerBenchmark;
         cacheSize = arch_sizes[gcnArch].L2_size;
         HIP_ASSERT(hipMalloc(&memBlock, cacheSize));
         HIP_ASSERT(hipMalloc(&dummy, workgroupSize * sizeof(float)));
@@ -467,7 +467,7 @@ int main(int argc, char **argv)
          * L1 BW benchmarking
          *
          * **********************************************/
-        numExperiments = numExperiments_user_or_default;
+        numExperiments = numExperimentsPerBenchmark;
         cacheSize = arch_sizes[gcnArch].L1_size;
         HIP_ASSERT(hipMalloc(&memBlock, cacheSize));
         HIP_ASSERT(hipMalloc(&dummy, workgroupSize * sizeof(float)));
@@ -525,7 +525,7 @@ int main(int argc, char **argv)
          * LDS BW benchmarking
          *
          * **********************************************/
-        numExperiments = numExperiments_user_or_default;
+        numExperiments = numExperimentsPerBenchmark;
         HIP_ASSERT(hipMalloc(&dummy, workgroupSize * sizeof(float)));
 
         // warm up first use default setting
@@ -577,7 +577,7 @@ int main(int argc, char **argv)
          *
          * **********************************************/
         int nSize = 0;
-        numExperiments = numExperiments_user_or_default;
+        numExperiments = numExperimentsPerBenchmark;
         HIP_ASSERT(hipMalloc(&memBlock, DEFAULT_DATASET_SIZE));
 
         // warm up first use default setting
@@ -586,7 +586,7 @@ int main(int argc, char **argv)
         int numThreads = numWorkgroups * workgroupSize;
 
         /* FP16 benchmark */
-        numExperiments = numExperiments_user_or_default;
+        numExperiments = numExperimentsPerBenchmark;
         currBenchmark++;
         if (auto search = unsupported_datatypes.find("FP16"); search != unsupported_datatypes.end())
         {
@@ -642,7 +642,7 @@ int main(int argc, char **argv)
         }
 
         /* FP32 benchmark */
-        numExperiments = numExperiments_user_or_default;
+        numExperiments = numExperimentsPerBenchmark;
         nSize = DEFAULT_DATASET_SIZE / sizeof(float) / numThreads * numThreads;
 
         hipLaunchKernelGGL((flops_benchmark<float, 1024>), dim3(numWorkgroups), dim3(workgroupSize), 0, 0, (float *)memBlock, nSize);
@@ -684,7 +684,7 @@ int main(int argc, char **argv)
         }
 
         /* FP64 benchmark */
-        numExperiments = numExperiments_user_or_default;
+        numExperiments = numExperimentsPerBenchmark;
         nSize = DEFAULT_DATASET_SIZE / sizeof(double) / numThreads * numThreads;
         hipLaunchKernelGGL((flops_benchmark<double, 1024>), dim3(numWorkgroups), dim3(workgroupSize), 0, 0, (double *)memBlock, nSize);
         HIP_ASSERT(hipDeviceSynchronize());
@@ -725,7 +725,7 @@ int main(int argc, char **argv)
         }
 
         /* INT8 benchmark */
-        numExperiments = numExperiments_user_or_default;
+        numExperiments = numExperimentsPerBenchmark;
         nSize = DEFAULT_DATASET_SIZE / sizeof(int8_t) / numThreads * numThreads;
         hipLaunchKernelGGL((flops_benchmark<int8_t, 1024>), dim3(numWorkgroups), dim3(workgroupSize), 0, 0, (int8_t *)memBlock, nSize);
         HIP_ASSERT(hipDeviceSynchronize());
@@ -766,7 +766,7 @@ int main(int argc, char **argv)
         }
 
         /* INT32 benchmark */
-        numExperiments = numExperiments_user_or_default;
+        numExperiments = numExperimentsPerBenchmark;
         nSize = DEFAULT_DATASET_SIZE / sizeof(int32_t) / numThreads * numThreads;
         hipLaunchKernelGGL((flops_benchmark<int32_t, 1024>), dim3(numWorkgroups), dim3(workgroupSize), 0, 0, (int32_t *)memBlock, nSize);
         HIP_ASSERT(hipDeviceSynchronize());
@@ -807,7 +807,7 @@ int main(int argc, char **argv)
         }
 
         /* INT64 benchmark */
-        numExperiments = numExperiments_user_or_default;
+        numExperiments = numExperimentsPerBenchmark;
         nSize = DEFAULT_DATASET_SIZE / sizeof(int64_t) / numThreads * numThreads;
         hipLaunchKernelGGL((flops_benchmark<int64_t, 1024>), dim3(numWorkgroups), dim3(workgroupSize), 0, 0, (int64_t *)memBlock, nSize);
         HIP_ASSERT(hipDeviceSynchronize());
@@ -861,7 +861,7 @@ int main(int argc, char **argv)
         numIters = 2000;
 
         /* MFMA-F4 */
-        numExperiments = numExperiments_user_or_default;
+        numExperiments = numExperimentsPerBenchmark;
         currBenchmark++;
         if (auto search = unsupported_datatypes.find("MFMA-F4"); search != unsupported_datatypes.end())
         {
@@ -911,7 +911,7 @@ int main(int argc, char **argv)
         }
 
         /* MFMA-F6 */
-        numExperiments = numExperiments_user_or_default;
+        numExperiments = numExperimentsPerBenchmark;
         currBenchmark++;
         if (auto search = unsupported_datatypes.find("MFMA-F6"); search != unsupported_datatypes.end())
         {
@@ -961,7 +961,7 @@ int main(int argc, char **argv)
         }
 
         /* MFMA-F8 */
-        numExperiments = numExperiments_user_or_default;
+        numExperiments = numExperimentsPerBenchmark;
         currBenchmark++;
         if (auto search = unsupported_datatypes.find("MFMA-F8"); search != unsupported_datatypes.end())
         {
@@ -1011,7 +1011,7 @@ int main(int argc, char **argv)
         }
 
         /* MFMA-F16 */
-        numExperiments = numExperiments_user_or_default;
+        numExperiments = numExperimentsPerBenchmark;
         totalFlops = (uint64_t)numWorkgroups * SIMDS_PER_CU * numIters * MFMA_F16_OPS;
         currBenchmark++;
         for (int n = 0; n < numExperiments; n++)
@@ -1048,7 +1048,7 @@ int main(int argc, char **argv)
         }
 
         /* MFMA-BF16 */
-        numExperiments = numExperiments_user_or_default;
+        numExperiments = numExperimentsPerBenchmark;
         currBenchmark++;
         totalFlops = (uint64_t)numWorkgroups * SIMDS_PER_CU * numIters * MFMA_BF16_OPS;
         for (int n = 0; n < numExperiments; n++)
@@ -1085,7 +1085,7 @@ int main(int argc, char **argv)
         }
 
         /* MFMA-F32 */
-        numExperiments = numExperiments_user_or_default;
+        numExperiments = numExperimentsPerBenchmark;
         totalFlops = (uint64_t)numWorkgroups * SIMDS_PER_CU * numIters * MFMA_F32_OPS;
         currBenchmark++;
         for (int n = 0; n < numExperiments; n++)
@@ -1122,7 +1122,7 @@ int main(int argc, char **argv)
         }
         
         /* MFMA-F64 */
-        numExperiments = numExperiments_user_or_default;
+        numExperiments = numExperimentsPerBenchmark;
         currBenchmark++;
         totalFlops = (uint64_t)numWorkgroups * SIMDS_PER_CU * numIters * MFMA_F64_OPS;
         if (auto search = unsupported_datatypes.find("MFMA-F64"); search != unsupported_datatypes.end())
@@ -1173,7 +1173,7 @@ int main(int argc, char **argv)
         }
 
         /* MFMA-I8 */
-        numExperiments = numExperiments_user_or_default;
+        numExperiments = numExperimentsPerBenchmark;
         currBenchmark++;
         totalFlops = (uint64_t)numWorkgroups * SIMDS_PER_CU * numIters * MFMA_I8_OPS;
         for (int n = 0; n < numExperiments; n++)
