@@ -47,8 +47,6 @@ int main(int argc, char **argv)
     arch_size_t arch_sizes;
     arch_sizes["gfx908"] = arch_size_specs{16 * 1024, 8 * 1024 * 1024, 0, /*          */ 64 * 1024}; // MI100
     arch_sizes["gfx90a"] = arch_size_specs{16 * 1024, 8 * 1024 * 1024, 0, /*          */ 64 * 1024}; // MI200 per die
-    arch_sizes["gfx940"] = arch_size_specs{32 * 1024, 4 * 1024 * 1024, 64 * 1024 * 1024, 64 * 1024}; // MI300A A0 (Obsolete)
-    arch_sizes["gfx941"] = arch_size_specs{32 * 1024, 4 * 1024 * 1024, 64 * 1024 * 1024, 64 * 1024}; // MI300X A0 (Obsolete)
     arch_sizes["gfx942"] = arch_size_specs{32 * 1024, 4 * 1024 * 1024, 64 * 1024 * 1024, 64 * 1024}; // MI300A/MI300X
     arch_sizes["gfx950"] = arch_size_specs{32 * 1024, 4 * 1024 * 1024, 64 * 1024 * 1024, 64 * 1024}; // MI355
 
@@ -58,22 +56,16 @@ int main(int argc, char **argv)
     cache_bw_kernel_selector_t L1_bw_kernel_selector;
     L1_bw_kernel_selector["gfx908"] = Cache_bw<float, 16 * 1024, 256>;
     L1_bw_kernel_selector["gfx90a"] = Cache_bw<float, 16 * 1024, 256>;
-    L1_bw_kernel_selector["gfx940"] = Cache_bw<float, 32 * 1024, 256>;
-    L1_bw_kernel_selector["gfx941"] = Cache_bw<float, 32 * 1024, 256>;
     L1_bw_kernel_selector["gfx942"] = Cache_bw<float, 32 * 1024, 256>;
     L1_bw_kernel_selector["gfx950"] = Cache_bw<float, 32 * 1024, 256>;
 
     cache_bw_kernel_selector_t L2_bw_kernel_selector;
     L2_bw_kernel_selector["gfx908"] = Cache_bw<float, 8 * 1024 * 1024, 256>;
     L2_bw_kernel_selector["gfx90a"] = Cache_bw<float, 8 * 1024 * 1024, 256>;
-    L2_bw_kernel_selector["gfx940"] = Cache_bw<float, 4 * 1024 * 1024, 256>;
-    L2_bw_kernel_selector["gfx941"] = Cache_bw<float, 4 * 1024 * 1024, 256>;
     L2_bw_kernel_selector["gfx942"] = Cache_bw<float, 4 * 1024 * 1024, 256>;
     L2_bw_kernel_selector["gfx950"] = Cache_bw<float, 4 * 1024 * 1024, 256>;
 
     cache_bw_kernel_selector_t MALL_bw_kernel_selector;
-    MALL_bw_kernel_selector["gfx940"] = Cache_bw<float, 64 * 1024 * 1024, 256>;
-    MALL_bw_kernel_selector["gfx941"] = Cache_bw<float, 64 * 1024 * 1024, 256>;
     MALL_bw_kernel_selector["gfx942"] = Cache_bw<float, 64 * 1024 * 1024, 256>;
     MALL_bw_kernel_selector["gfx950"] = Cache_bw<float, 64 * 1024 * 1024, 256>;
 
@@ -194,8 +186,6 @@ int main(int argc, char **argv)
     archs_t supported_archs_unsupported_dt = {
         {"gfx908", {"MALL", "FP16", "MFMA-F4", "MFMA-F6", "MFMA-F8", "MFMA-F64"}}, // MI100 series
         {"gfx90a", {"MALL", "MFMA-F4", "MFMA-F6", "MFMA-F8"}},             // MI200 series
-        {"gfx940", {"MFMA-F4", "MFMA-F6"}}, // MI300A_A0
-        {"gfx941", {"MFMA-F4", "MFMA-F6"}}, // MI300X_A0
         {"gfx942", {"MFMA-F4", "MFMA-F6"}}, // MI300A_A1, MI300X_A1, MI308
         {"gfx950", {}}, // MI350, MI355
     };
