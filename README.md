@@ -1,3 +1,8 @@
+### DEPRECATED
+This repo is no longer being maintained. Please refer to the latest benchmarking features within [ROCm Compute Profiler](https://github.com/ROCm/rocm-systems/tree/develop/projects/rocprofiler-compute) tool in the [rocm-systems](https://github.com/ROCm/rocm-systems) repository.
+\
+\
+\
 [![build](https://github.com/ROCm/rocm-amdgpu-bench/actions/workflows/build.yml/badge.svg)](https://github.com/ROCm/rocm-amdgpu-bench/actions/workflows/build.yml)
 
 # rocm-amdgpu-bench: a roofline utility
